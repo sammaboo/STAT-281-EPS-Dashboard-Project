@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}WRDS Dashboard - Refresh Data{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="stat-card">
+            <h3 class="mb-4">Refresh Data from WRDS</h3>
+            
+            <div class="alert alert-info">
+                <h6 class="alert-heading">Security Note</h6>
+                <p class="mb-0">Your credentials are used only to connect to WRDS and are never stored. 
+                Since this dashboard runs locally on your machine, your password never leaves your computer.</p>
+            </div>
+            
+            <form id="refresh-form">
+                <div class="mb-3">
+                    <label for="username" class="form-label">WRDS Username</label>
+                    <input type="text" class="form-control" id="username" name="username" required 
+                           placeholder="Enter your WRDS username">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">WRDS Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required
+                           placeholder="Enter your WRDS password">
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn refresh-btn btn-lg" id="submit-btn">
+                        <span id="btn-text">Start Data Pull</span>
+                        <span id="btn-loading" class="d-none">
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            Pulling data...
+                        </span>
+                    </button>
+                </div>
+            </form>
+            
+            <div id="status-container" class="mt-4 d-none">
+                <div class="alert" id="status-alert">
+                    <span id="status-message"></span>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <h5>What this pulls:</h5>
+            <ul>
+                <li><strong>IBES</strong> - Analyst EPS estimates and actuals</li>
+                <li><strong>Compustat</strong> - Financial statement data (revenue, assets, income, EBITDA)</li>
+                <li><strong>Linking Tables</strong> - IBES↔CRSP↔Compustat mappings</li>
+            </ul>
+            
+            <h5>Companies included:</h5>
+            <p class="text-muted">Top 50 S&P 500 by market cap: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, UNH, XOM, JPM, JNJ, V, PG, MA, HD, CVX, MRK, ABBV, LLY, PEP, KO, COST, AVGO, WMT, MCD, CSCO, TMO, ABT, CRM, ACN, DHR, ADBE, NKE, CMCSA, VZ, NEE, INTC, TXN, PM, WFC, BMY, UPS, RTX, QCOM, HON, T, ORCL, IBM, LOW</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('refresh-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnLoading = document.getElementById('btn-loading');
+    const statusContainer = document.getElementById('status-container');
+    const statusAlert = document.getElementById('status-alert');
+    const statusMessage = document.getElementById('status-message');
+    
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    btnText.classList.add('d-none');
+    btnLoading.classList.remove('d-none');
+    
+    // Submit the form
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('/api/refresh', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to start refresh');
+        }
+        
+        // Show status and start polling
+        statusContainer.classList.remove('d-none');
+        statusAlert.className = 'alert alert-info';
+        statusMessage.textContent = 'Connecting to WRDS...';
+        
+        // Poll for status updates
+        const pollStatus = async () => {
+            try {
+                const statusResponse = await fetch('/api/refresh/status');
+                const status = await statusResponse.json();
+                
+                statusMessage.textContent = status.message || 'Processing...';
+                
+                if (status.running) {
+                    statusAlert.className = 'alert alert-info';
+                    setTimeout(pollStatus, 2000);
+                } else {
+                    // Done
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('d-none');
+                    btnLoading.classList.add('d-none');
+                    
+                    if (status.success) {
+                        statusAlert.className = 'alert alert-success';
+                        statusMessage.innerHTML = status.message + 
+                            ' <a href="/" class="alert-link">View Dashboard</a>';
+                    } else {
+                        statusAlert.className = 'alert alert-danger';
+                        statusMessage.textContent = status.message;
+                    }
+                }
+            } catch (err) {
+                statusAlert.className = 'alert alert-danger';
+                statusMessage.textContent = 'Error checking status: ' + err.message;
+                submitBtn.disabled = false;
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+            }
+        };
+        
+        setTimeout(pollStatus, 2000);
+        
+    } catch (error) {
+        statusContainer.classList.remove('d-none');
+        statusAlert.className = 'alert alert-danger';
+        statusMessage.textContent = '❌ ' + error.message;
+        submitBtn.disabled = false;
+        btnText.classList.remove('d-none');
+        btnLoading.classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}

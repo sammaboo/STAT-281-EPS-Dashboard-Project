@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+
+{% block title %}EPS Dashboard{% endblock %}
+
+{% block stats_bar %}
+{% if data_exists %}
+<div class="d-flex align-items-center gap-4 ms-auto">
+    <div class="text-center">
+        <span class="fw-bold text-white">{{ stats.unique_tickers }}</span>
+        <span class="text-secondary small ms-1">Companies</span>
+    </div>
+    <div class="text-center">
+        <span class="fw-bold text-white">{{ "{:,}".format(stats.total_records) }}</span>
+        <span class="text-secondary small ms-1">Records</span>
+    </div>
+    <div class="text-center">
+        <span class="text-white small">{{ stats.date_range }}</span>
+    </div>
+    <a href="/refresh" class="btn btn-sm btn-outline-light">Refresh</a>
+    {% if last_modified %}<span class="text-secondary small">{{ last_modified }}</span>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not data_exists %}
+<div class="alert alert-warning">
+    <h4>No Data Available</h4>
+    <p>Data file not found. <a href="/refresh">Refresh from WRDS</a>.</p>
+</div>
+{% else %}
+
+<!-- Interactive Analysis Section -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0" style="color: #c9d1d9;">Interactive Analysis</h5>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">Compare two companies side-by-side across EPS predictability (current vs. lagged EPS with OLS trendline) and estimate convergence — how analyst forecasts approach actual earnings over time. Use the dropdowns to swap companies and filter by year range.</div>
+            </div>
+        </div>
+        <div class="d-flex gap-3 flex-wrap align-items-end">
+            <div>
+                <label for="ticker1-select" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company 1</label>
+                <select id="ticker1-select" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    {% for t in tickers %}
+                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ticker2-select" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company 2</label>
+                <select id="ticker2-select" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    {% for t in tickers %}
+                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker2 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="year-start" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Start Year</label>
+                <select id="year-start" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == min_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="year-end" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">End Year</label>
+                <select id="year-end" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-12">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-end mb-2">
+                        <select id="predictability-select" class="form-select form-select-sm" style="background-color: #21262d; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                            <option value="">All Companies</option>
+                            {% for t in tickers %}
+                            <option value="{{ t.ticker }}">{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="predictability-chart"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12"><div class="chart-container"><div id="comparison-chart"></div></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Returns Analysis Section -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h5 class="mb-0" style="color: #c9d1d9;">EPS & Stock Returns Analysis</h5>
+                <small style="color: #8b949e;">Requires refreshing data from WRDS to include CRSP returns</small>
+            </div>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">Explore the relationship between earnings surprises and stock returns using CRSP market data. The scatter plot tests whether beating analyst estimates drives higher returns across all companies with a single OLS trendline. The dual-axis trend chart overlays EPS with stock returns for a single company over time.</div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-12"><div class="chart-container"><div id="eps-surprise-returns-chart"></div></div></div>
+        </div>
+        <div class="row">
+            <div class="col-12"><div class="chart-container"><div id="eps-returns-trend-chart"></div></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- EPS Prediction Section -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0" style="color: #c9d1d9;">EPS Predictions & Forecasting</h5>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">Forecast future quarterly EPS using six methods: linear regression, exponential smoothing, moving average, analyst-adjusted estimates, Holt-Winters (triple exponential smoothing with seasonality), or SARIMA (seasonal ARIMA). The surprise pattern chart shows historical beat/miss trends. Surprise analysis breaks down seasonality by quarter and tracks the rolling average over time. Adjust the time frame to focus predictions on recent data. <strong>Confidence scores are computed via leave-last-4-out backtesting</strong> — the model is trained on all data except the last 4 quarters, then its predictions are compared to actual values. The resulting MAPE (Mean Absolute % Error) is converted into a confidence score.</div>
+            </div>
+        </div>
+        <div class="d-flex gap-3 flex-wrap align-items-end">
+            <div>
+                <label for="prediction-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
+                <select id="prediction-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    {% for t in tickers %}
+                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="prediction-method" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Prediction Method</label>
+                <select id="prediction-method" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 160px;">
+                    <option value="linear" selected>Linear Trend</option>
+                    <option value="exponential">Exponential Smoothing</option>
+                    <option value="moving_avg">Moving Average</option>
+                    <option value="analyst">Analyst + Surprise</option>
+                    <option value="holt_winters">Holt-Winters</option>
+                    <option value="sarima">SARIMA</option>
+                </select>
+            </div>
+            <div class="ms-auto">
+                <span id="prediction-confidence" class="badge" style="background-color: #238636; font-size: 0.85rem;"></span>
+            </div>
+        </div>
+        <div class="mt-3" style="padding: 0 4px;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <label style="color: #8b949e; font-size: 0.8rem; font-weight: 500;">Training Window</label>
+                <span id="range-display" style="font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.8rem; color: #c9d1d9;">All Time</span>
+            </div>
+            <div class="range-slider-container" id="range-slider-container">
+                <div class="range-slider-track"></div>
+                <div class="range-slider-fill" id="range-slider-fill"></div>
+                <div class="range-slider-handle" id="range-handle-left"></div>
+                <div class="range-slider-handle" id="range-handle-right"></div>
+            </div>
+            <div class="range-slider-ticks" id="range-slider-ticks"></div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="chart-container"><div id="prediction-chart"></div></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="chart-container"><div id="surprise-analysis-chart"></div></div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="p-3" style="background-color: #21262d; border-radius: 6px;">
+                    <h6 style="color: #c9d1d9;">Prediction Summary</h6>
+                    <div id="prediction-summary" style="color: #8b949e; font-size: 0.9rem;"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-3" style="background-color: #21262d; border-radius: 6px;">
+                    <h6 style="color: #c9d1d9;">Method Info</h6>
+                    <div id="method-info" style="color: #8b949e; font-size: 0.9rem;">
+                        <strong>Linear:</strong> Projects trend using linear regression on historical EPS.<br>
+                        <strong>Exponential:</strong> Weights recent quarters more heavily.<br>
+                        <strong>Moving Avg:</strong> Uses 4-quarter average with trend.<br>
+                        <strong>Analyst:</strong> Adjusts estimates using historical surprise patterns.<br>
+                        <strong>Holt-Winters:</strong> Triple exponential smoothing with trend & seasonality.<br>
+                        <strong>SARIMA:</strong> Seasonal ARIMA model capturing autocorrelation & seasonality.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start">
+            <h5 class="mb-0" style="color: #c9d1d9;">Historical Analysis</h5>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">Detailed analysis of the selected company's earnings history. The main chart shows estimate vs actual EPS over time. The revision trail shows how analyst consensus evolves in dollar terms as each earnings date approaches — lines converge toward the ★ actual. The accuracy funnel below aggregates all historical quarters to show how forecast error narrows over time (P25–P75 shaded band). The dispersion chart shows how much analysts agree or disagree.</div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-container"><div id="eps-history-chart"></div></div>
+        <div class="row mt-3">
+            <div class="col-lg-12">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span style="color: #8b949e; font-size: 0.85rem;">Revision Trail</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="revision-quarters" style="color: #8b949e; font-size: 0.8rem; white-space: nowrap;">Quarters:</label>
+                        <select id="revision-quarters" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 80px;">
+                            <option value="4">4</option>
+                            <option value="6" selected>6</option>
+                            <option value="8">8</option>
+                            <option value="12">12</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="revision-trail-chart"></div></div>
+                <div id="revision-metrics" class="row mt-2 g-2">
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Walk-Down</div>
+                            <div id="metric-walkdown" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Accuracy (Median)</div>
+                            <div id="metric-accuracy" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Beat Rate</div>
+                            <div id="metric-beat-rate" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Avg Surprise</div>
+                            <div id="metric-avg-surprise" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Converges &lt;5%</div>
+                            <div id="metric-convergence" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Quarters</div>
+                            <div id="metric-quarters" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-lg-12"><div class="chart-container"><div id="dispersion-chart"></div></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Post-Earnings Announcement Drift -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start">
+            <h5 class="mb-0" style="color: #c9d1d9;">Post-Earnings Announcement Drift</h5>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">One of the most well-documented anomalies in finance: stocks that beat earnings estimates tend to keep rising in the following quarter, while stocks that miss tend to keep falling. The left chart groups all earnings events into surprise quintiles and shows the average next-quarter return for each group. The right chart shows the raw scatter.</div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-container"><div id="pead-chart"></div></div>
+    </div>
+</div>
+
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start">
+            <h5 class="mb-0" style="color: #c9d1d9;">Additional Metrics</h5>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">Supplementary charts covering analyst estimates vs. actuals, estimate accuracy (average error %), revenue trends, net income trends for top companies, net income margin rankings, and analyst coverage depth. These provide broader context beyond the interactive and prediction sections.</div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-6"><div class="chart-container"><div id="eps-chart"></div></div></div>
+            <div class="col-lg-6"><div class="chart-container"><div id="accuracy-chart"></div></div></div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6"><div class="chart-container"><div id="revenue-chart"></div></div></div>
+            <div class="col-lg-6"><div class="chart-container"><div id="profitability-chart"></div></div></div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6"><div class="chart-container"><div id="ebitda-chart"></div></div></div>
+            <div class="col-lg-6"><div class="chart-container"><div id="analyst-chart"></div></div></div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if data_exists %}
+<script>
+var charts = {{ charts | tojson | safe }};
+var mapping = {
+    eps_history: 'eps-history-chart',
+    eps_estimates: 'eps-chart',
+    estimate_accuracy: 'accuracy-chart',
+    revenue: 'revenue-chart',
+    profitability: 'profitability-chart',
+    ebitda_margin: 'ebitda-chart',
+    analyst_coverage: 'analyst-chart',
+    eps_predictability: 'predictability-chart',
+    company_comparison: 'comparison-chart',
+    eps_surprise_returns: 'eps-surprise-returns-chart',
+    eps_returns_trend: 'eps-returns-trend-chart',
+    revision_trail: 'revision-trail-chart',
+    pead: 'pead-chart',
+    dispersion: 'dispersion-chart'
+};
+Object.keys(mapping).forEach(function(key) {
+    if (charts[key]) {
+        var c = JSON.parse(charts[key]);
+        Plotly.newPlot(mapping[key], c.data, c.layout, {responsive: true});
+    }
+});
+
+// Interactive chart update functions
+function getYearParams() {
+    var yearStart = document.getElementById('year-start').value;
+    var yearEnd = document.getElementById('year-end').value;
+    return '&year_start=' + yearStart + '&year_end=' + yearEnd;
+}
+
+function updateEpsHistory() {
+    var ticker1 = document.getElementById('ticker1-select').value;
+    fetch('/api/chart/eps_history?ticker=' + ticker1)
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('eps-history-chart', c.data, c.layout);
+            }
+        });
+}
+
+function updateRevisionTrail() {
+    var ticker1 = document.getElementById('ticker1-select').value;
+    var numQ = document.getElementById('revision-quarters').value;
+    fetch('/api/chart/revision_trail?ticker=' + ticker1 + '&num_quarters=' + numQ)
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('revision-trail-chart', c.data, c.layout);
+            }
+            if (data.metrics) {
+                var m = data.metrics;
+                document.getElementById('metric-walkdown').textContent = m.walk_down_pct !== null ? m.walk_down_pct + '%' : '—';
+                document.getElementById('metric-accuracy').textContent = m.median_final_accuracy !== null ? m.median_final_accuracy + '%' : '—';
+                document.getElementById('metric-beat-rate').textContent = m.beat_rate !== null ? m.beat_rate + '%' : '—';
+                document.getElementById('metric-avg-surprise').textContent = m.avg_surprise !== null ? (m.avg_surprise > 0 ? '+' : '') + m.avg_surprise + '%' : '—';
+                document.getElementById('metric-convergence').textContent = m.convergence_month !== null ? m.convergence_month + ' mo' : '—';
+                document.getElementById('metric-quarters').textContent = m.quarters_analyzed !== null ? m.quarters_analyzed : '—';
+            }
+        });
+}
+
+function updateDispersion() {
+    var ticker1 = document.getElementById('ticker1-select').value;
+    fetch('/api/chart/dispersion?ticker=' + ticker1)
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('dispersion-chart', c.data, c.layout);
+            }
+        });
+}
+
+function updateComparison() {
+    var ticker1 = document.getElementById('ticker1-select').value;
+    var ticker2 = document.getElementById('ticker2-select').value;
+    fetch('/api/chart/comparison?ticker1=' + ticker1 + '&ticker2=' + ticker2 + getYearParams())
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('comparison-chart', c.data, c.layout);
+            }
+        });
+}
+
+function updatePredictability() {
+    var ticker = document.getElementById('predictability-select').value;
+    var url = '/api/chart/predictability?' + (ticker ? 'ticker=' + ticker + '&' : '') + getYearParams().substring(1);
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('predictability-chart', c.data, c.layout);
+            }
+        });
+}
+
+function updateEpsSurpriseReturns() {
+    fetch('/api/chart/eps_surprise_returns?' + getYearParams().substring(1))
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('eps-surprise-returns-chart', c.data, c.layout);
+            }
+        });
+}
+
+function updateEpsReturnsTrend() {
+    var ticker = document.getElementById('ticker1-select').value;
+    fetch('/api/chart/eps_returns_trend?ticker=' + ticker + getYearParams())
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('eps-returns-trend-chart', c.data, c.layout);
+            }
+        });
+}
+
+function updateAllInteractiveCharts() {
+    updateEpsHistory();
+    updateRevisionTrail();
+    updateDispersion();
+    updateComparison();
+    updatePredictability();
+    updateEpsSurpriseReturns();
+    updateEpsReturnsTrend();
+}
+
+// Range slider state & logic
+var rangeSliderState = { quarters: [], leftIndex: 0, rightIndex: 0, dragging: null };
+
+function initRangeSlider() {
+    var minYear = {{ min_year }};
+    var maxYear = {{ max_year }};
+    var quarters = [];
+    var qEnds = {1: '-03-31', 2: '-06-30', 3: '-09-30', 4: '-12-31'};
+    for (var y = minYear; y <= maxYear; y++) {
+        for (var q = 1; q <= 4; q++) {
+            quarters.push({ year: y, quarter: q, date: y + qEnds[q], label: 'Q' + q + ' ' + y });
+        }
+    }
+    rangeSliderState.quarters = quarters;
+    rangeSliderState.leftIndex = 0;
+    rangeSliderState.rightIndex = quarters.length - 1;
+    buildTicks();
+    updateSliderUI();
+    bindSliderEvents();
+}
+
+function buildTicks() {
+    var container = document.getElementById('range-slider-ticks');
+    container.innerHTML = '';
+    var quarters = rangeSliderState.quarters;
+    var n = quarters.length;
+    if (n < 2) return;
+    for (var i = 0; i < n; i++) {
+        var pct = (i / (n - 1)) * 100;
+        var tick = document.createElement('div');
+        tick.className = 'range-tick ' + (quarters[i].quarter === 1 ? 'range-tick-year' : 'range-tick-quarter');
+        tick.style.left = pct + '%';
+        var line = document.createElement('span');
+        line.className = 'range-tick-line';
+        tick.appendChild(line);
+        if (quarters[i].quarter === 1) {
+            var label = document.createElement('span');
+            label.className = 'range-tick-label';
+            label.textContent = quarters[i].year;
+            tick.appendChild(label);
+        }
+        container.appendChild(tick);
+    }
+}
+
+function updateSliderUI() {
+    var quarters = rangeSliderState.quarters;
+    var n = quarters.length;
+    if (n < 2) return;
+    var leftPct = (rangeSliderState.leftIndex / (n - 1)) * 100;
+    var rightPct = (rangeSliderState.rightIndex / (n - 1)) * 100;
+    document.getElementById('range-handle-left').style.left = leftPct + '%';
+    document.getElementById('range-handle-right').style.left = rightPct + '%';
+    document.getElementById('range-slider-fill').style.left = leftPct + '%';
+    document.getElementById('range-slider-fill').style.width = (rightPct - leftPct) + '%';
+    var display = document.getElementById('range-display');
+    if (rangeSliderState.leftIndex === 0 && rangeSliderState.rightIndex === n - 1) {
+        display.textContent = 'All Time';
+    } else {
+        display.textContent = quarters[rangeSliderState.leftIndex].label + '  —  ' + quarters[rangeSliderState.rightIndex].label;
+    }
+}
+
+function getIndexFromX(clientX) {
+    var container = document.getElementById('range-slider-container');
+    var rect = container.getBoundingClientRect();
+    var x = clientX - rect.left;
+    var pct = x / rect.width;
+    pct = Math.max(0, Math.min(1, pct));
+    var n = rangeSliderState.quarters.length;
+    return Math.round(pct * (n - 1));
+}
+
+function bindSliderEvents() {
+    var leftHandle = document.getElementById('range-handle-left');
+    var rightHandle = document.getElementById('range-handle-right');
+    var container = document.getElementById('range-slider-container');
+
+    function onHandleDown(which, e) {
+        e.preventDefault();
+        e.stopPropagation();
+        rangeSliderState.dragging = which;
+        (which === 'left' ? leftHandle : rightHandle).classList.add('dragging');
+    }
+
+    leftHandle.addEventListener('mousedown', function(e) { onHandleDown('left', e); });
+    rightHandle.addEventListener('mousedown', function(e) { onHandleDown('right', e); });
+    leftHandle.addEventListener('touchstart', function(e) { onHandleDown('left', e); }, {passive: false});
+    rightHandle.addEventListener('touchstart', function(e) { onHandleDown('right', e); }, {passive: false});
+
+    // Click on track to jump nearest handle
+    container.addEventListener('mousedown', function(e) {
+        if (e.target === leftHandle || e.target === rightHandle) return;
+        var idx = getIndexFromX(e.clientX);
+        var distLeft = Math.abs(idx - rangeSliderState.leftIndex);
+        var distRight = Math.abs(idx - rangeSliderState.rightIndex);
+        if (distLeft <= distRight) {
+            rangeSliderState.leftIndex = Math.min(idx, rangeSliderState.rightIndex - 1);
+        } else {
+            rangeSliderState.rightIndex = Math.max(idx, rangeSliderState.leftIndex + 1);
+        }
+        updateSliderUI();
+        updatePredictionCharts();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!rangeSliderState.dragging) return;
+        var idx = getIndexFromX(e.clientX);
+        if (rangeSliderState.dragging === 'left') {
+            rangeSliderState.leftIndex = Math.max(0, Math.min(idx, rangeSliderState.rightIndex - 1));
+        } else {
+            rangeSliderState.rightIndex = Math.min(rangeSliderState.quarters.length - 1, Math.max(idx, rangeSliderState.leftIndex + 1));
+        }
+        updateSliderUI();
+    });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!rangeSliderState.dragging) return;
+        e.preventDefault();
+        var touch = e.touches[0];
+        var idx = getIndexFromX(touch.clientX);
+        if (rangeSliderState.dragging === 'left') {
+            rangeSliderState.leftIndex = Math.max(0, Math.min(idx, rangeSliderState.rightIndex - 1));
+        } else {
+            rangeSliderState.rightIndex = Math.min(rangeSliderState.quarters.length - 1, Math.max(idx, rangeSliderState.leftIndex + 1));
+        }
+        updateSliderUI();
+    }, {passive: false});
+
+    function onUp() {
+        if (!rangeSliderState.dragging) return;
+        leftHandle.classList.remove('dragging');
+        rightHandle.classList.remove('dragging');
+        rangeSliderState.dragging = null;
+        updatePredictionCharts();
+    }
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+}
+
+// Prediction functions
+function updatePredictionCharts() {
+    var ticker = document.getElementById('prediction-ticker').value;
+    var method = document.getElementById('prediction-method').value;
+    var quarters = rangeSliderState.quarters;
+    var n = quarters.length;
+    var isFullRange = (rangeSliderState.leftIndex === 0 && rangeSliderState.rightIndex === n - 1);
+    var rangeParams = '';
+    if (isFullRange) {
+        rangeParams = '&timeframe=all';
+    } else {
+        rangeParams = '&start_date=' + quarters[rangeSliderState.leftIndex].date + '&end_date=' + quarters[rangeSliderState.rightIndex].date;
+    }
+    
+    // Update prediction chart
+    fetch('/api/chart/prediction?ticker=' + ticker + '&method=' + method + rangeParams)
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('prediction-chart', c.data, c.layout);
+            }
+        });
+    
+    // Update surprise analysis chart
+    fetch('/api/chart/surprise_analysis?ticker=' + ticker + rangeParams)
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('surprise-analysis-chart', c.data, c.layout);
+            }
+        });
+    
+    // Get prediction data for summary
+    fetch('/api/prediction_data?ticker=' + ticker + '&method=' + method + rangeParams)
+        .then(response => response.json())
+        .then(data => {
+            if (data) {
+                // Update confidence badge
+                var confidenceBadge = document.getElementById('prediction-confidence');
+                var confidence = Math.round(data.confidence * 100);
+                var badgeText = 'Model Confidence: ' + confidence + '%';
+                if (data.backtest_mape !== null && data.backtest_mape !== undefined) {
+                    badgeText += ' (Backtest MAPE: ' + data.backtest_mape + '%)';
+                }
+                confidenceBadge.textContent = badgeText;
+                if (confidence >= 70) {
+                    confidenceBadge.style.backgroundColor = '#238636';
+                } else if (confidence >= 50) {
+                    confidenceBadge.style.backgroundColor = '#9e6a03';
+                } else {
+                    confidenceBadge.style.backgroundColor = '#da3633';
+                }
+                
+                // Update prediction summary
+                var summaryHtml = '<strong>Next 4 Quarters Forecast:</strong><br>';
+                for (var i = 0; i < data.future_dates.length; i++) {
+                    summaryHtml += data.future_dates[i] + ': <span style="color: #f0883e;">$' + data.predicted_eps[i].toFixed(2) + '</span><br>';
+                }
+                summaryHtml += '<br><strong>Historical Surprise:</strong><br>';
+                summaryHtml += 'Average: ' + data.avg_surprise_pct.toFixed(1) + '%<br>';
+                summaryHtml += 'Std Dev: ' + data.std_surprise_pct.toFixed(1) + '%';
+                document.getElementById('prediction-summary').innerHTML = summaryHtml;
+            }
+        });
+}
+
+// Initialize prediction charts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initRangeSlider();
+    updatePredictionCharts();
+    updateRevisionTrail();
+});
+
+// Event listeners for dropdowns
+document.getElementById('ticker1-select').addEventListener('change', function() {
+    updateEpsHistory();
+    updateRevisionTrail();
+    updateDispersion();
+    updateComparison();
+    updateEpsReturnsTrend();
+});
+document.getElementById('revision-quarters').addEventListener('change', updateRevisionTrail);
+document.getElementById('ticker2-select').addEventListener('change', function() {
+    updateComparison();
+});
+document.getElementById('predictability-select').addEventListener('change', updatePredictability);
+document.getElementById('year-start').addEventListener('change', updateAllInteractiveCharts);
+document.getElementById('year-end').addEventListener('change', updateAllInteractiveCharts);
+
+// Prediction event listeners
+document.getElementById('prediction-ticker').addEventListener('change', function() {
+    initRangeSlider();
+    updatePredictionCharts();
+});
+document.getElementById('prediction-method').addEventListener('change', updatePredictionCharts);
+</script>
+{% endif %}
+{% endblock %}
