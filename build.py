@@ -186,7 +186,7 @@ def generate_api_files(df, ticker_symbols):
     export_ticker_data(df, ticker_symbols)
 
 
-STATIC_FETCH_SCRIPT = """<script src="static/prediction_engine.js"></script>
+STATIC_FETCH_SCRIPT = """<script src="static/prediction_engine.js?v=""" + str(int(time.time())) + """"></script>
 <script>
 var _sfCache = {};
 function _applyYearRange(data, ys, ye) {

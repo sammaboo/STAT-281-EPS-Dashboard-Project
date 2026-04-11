@@ -187,12 +187,9 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
     
     fig = make_subplots(
         rows=2, cols=1,
-        row_heights=[0.60, 0.40],
-        vertical_spacing=0.18,
-        subplot_titles=[
-            f'Consensus Estimate Trail — {company_name}',
-            f'Forecast Accuracy Funnel ({len(all_quarters)} quarters)'
-        ]
+        row_heights=[0.62, 0.38],
+        vertical_spacing=0.14,
+        subplot_titles=['', '']
     )
     
     # =====================================================
@@ -206,6 +203,8 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
     avg_path_data = {}  # month_bucket -> list of estimates
     beat_legend_added = False
     miss_legend_added = False
+    
+    n_display = len(display_quarters)
     
     for i, fpe in enumerate(display_quarters):
         q_data = ticker_data[ticker_data['fpedats'] == fpe].sort_values('months_before')
@@ -222,6 +221,10 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
         for _, row in q_data.iterrows():
             mb = int(round(row['months_before']))
             avg_path_data.setdefault(mb, []).append(row['meanest'])
+        
+        # Gradient opacity: most recent quarters are more visible
+        base_opacity = 0.25 + 0.45 * (i / max(n_display - 1, 1))
+        line_width = 1.0 + 0.8 * (i / max(n_display - 1, 1))
         
         # Thin background line (individual quarter)
         show_legend = False
@@ -240,25 +243,44 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
             name=legend_name,
             legendgroup='beat' if is_beat else 'miss',
             showlegend=show_legend,
-            line=dict(color=color, width=1.2),
-            opacity=0.35,
+            line=dict(color=color, width=line_width),
+            opacity=base_opacity,
             mode='lines',
-            hovertemplate=f'{fpe_label}<br>%{{x:.0f}} mo before FPE<br>Consensus: $%{{y:.2f}}<br>Actual: {"${:.2f}".format(actual) if actual else "N/A"}<extra></extra>'
+            hovertemplate=f'{fpe_label}<br>%{{x:.0f}} mo before<br>Consensus: $%{{y:.2f}}<br>Actual: {"${:.2f}".format(actual) if actual else "N/A"}<extra></extra>'
         ), row=1, col=1)
         
-        # Endpoint dot + label at x=0
+        # Endpoint star at x=0 for the actual value
         if actual is not None:
-            # Small dot at the actual
             fig.add_trace(go.Scatter(
                 x=[0], y=[actual],
-                mode='markers+text',
-                marker=dict(size=7, color=color, line=dict(color='#0d1117', width=1)),
-                text=[f'${actual:.2f}'],
-                textposition='middle left',
-                textfont=dict(size=9, color=color),
+                mode='markers',
+                marker=dict(size=9, color=color, symbol='star',
+                            line=dict(color='#0d1117', width=0.5)),
                 showlegend=False,
                 hovertemplate=f'{fpe_label}<br>★ Actual: ${actual:.2f}<extra></extra>'
             ), row=1, col=1)
+        
+        # Small label at the start of the line (earliest estimate)
+        if len(q_data) > 0:
+            start_row = q_data.iloc[-1]
+            fig.add_annotation(
+                x=start_row['months_before'], y=start_row['meanest'],
+                text=fpe_label, showarrow=False,
+                font=dict(size=8, color=color),
+                opacity=base_opacity + 0.15,
+                xanchor='left', yanchor='middle',
+                row=1, col=1
+            )
+    
+    # Vertical line at x=0 marking earnings date
+    fig.add_vline(x=0, line_dash='solid', line_color='#484f58', line_width=1, row=1, col=1)
+    fig.add_annotation(
+        x=0, y=1, yref='y domain', xref='x',
+        text='Earnings', showarrow=False,
+        font=dict(size=9, color='#484f58'),
+        xanchor='right', yanchor='top',
+        row=1, col=1
+    )
     
     # Bold average convergence path
     if avg_path_data:
@@ -268,36 +290,18 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
         # Glow effect — wider semi-transparent line underneath
         fig.add_trace(go.Scatter(
             x=avg_months, y=avg_values,
-            mode='lines', line=dict(color=AVG_COLOR, width=8),
-            opacity=0.15, showlegend=False, hoverinfo='skip'
+            mode='lines', line=dict(color=AVG_COLOR, width=10),
+            opacity=0.12, showlegend=False, hoverinfo='skip'
         ), row=1, col=1)
         
         fig.add_trace(go.Scatter(
             x=avg_months, y=avg_values,
             name='Avg Consensus Path',
             line=dict(color=AVG_COLOR, width=3),
-            mode='lines+markers', marker=dict(size=4, color=AVG_COLOR),
+            mode='lines+markers', marker=dict(size=5, color=AVG_COLOR),
             hovertemplate='Avg across %{customdata} quarters<br>%{x} mo before<br>Consensus: $%{y:.2f}<extra></extra>',
             customdata=[len(avg_path_data[m]) for m in avg_months]
         ), row=1, col=1)
-    
-    # Label the most recent quarter
-    if display_quarters is not None and len(display_quarters) > 0:
-        latest_fpe = display_quarters[-1]
-        latest_q = ticker_data[ticker_data['fpedats'] == latest_fpe].sort_values('months_before')
-        if len(latest_q) > 0:
-            latest_label = pd.Timestamp(latest_fpe).strftime('%Y-Q') + str((pd.Timestamp(latest_fpe).month - 1) // 3 + 1)
-            # Find the midpoint of this line to place annotation
-            mid_idx = len(latest_q) // 2
-            mid_row = latest_q.iloc[mid_idx]
-            fig.add_annotation(
-                x=mid_row['months_before'], y=mid_row['meanest'],
-                text=f'← {latest_label} (latest)',
-                showarrow=False,
-                font=dict(size=10, color='#c9d1d9'),
-                xanchor='left', yanchor='bottom',
-                row=1, col=1
-            )
     
     # =====================================================
     # ROW 2: Accuracy Funnel + convergence annotation
@@ -312,8 +316,6 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
             mb = int(round(row['months_before']))
             pct_err = abs((row['meanest'] - actual) / abs(actual) * 100)
             horizon_errors.setdefault(mb, []).append(pct_err)
-    
-    convergence_month_val = None  # track for annotation
     
     if horizon_errors:
         months_sorted = sorted(horizon_errors.keys())
@@ -347,12 +349,17 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
             name='P25–P75 Range', showlegend=True, hoverinfo='skip'
         ), row=2, col=1)
         
-        # Median line (slightly thicker)
+        # Median line with glow
+        fig.add_trace(go.Scatter(
+            x=months_sorted, y=medians,
+            mode='lines', line=dict(color='#58a6ff', width=8),
+            opacity=0.12, showlegend=False, hoverinfo='skip'
+        ), row=2, col=1)
         fig.add_trace(go.Scatter(
             x=months_sorted, y=medians,
             name='Median |Error|',
-            line=dict(color='#58a6ff', width=3.5),
-            mode='lines+markers', marker=dict(size=5),
+            line=dict(color='#58a6ff', width=3),
+            mode='lines+markers', marker=dict(size=5, symbol='circle'),
             hovertemplate='%{x} mo before<br>Median error: %{y:.1f}%<br>n=%{customdata}<extra></extra>',
             customdata=counts
         ), row=2, col=1)
@@ -430,9 +437,10 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
         fig.add_annotation(
             x=metrics['convergence_month'], y=0,
             text=f"Converges <5% at {metrics['convergence_month']} mo",
-            showarrow=False,
-            font=dict(size=9, color='#bc8cff'),
+            showarrow=True, arrowhead=0, arrowcolor='#bc8cff', arrowwidth=1,
+            font=dict(size=10, color='#bc8cff'),
             yref='y2', yanchor='bottom', xanchor='left',
+            ay=-25,
             row=2, col=1
         )
     
@@ -440,7 +448,7 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
     # Layout
     # =====================================================
     fig.update_layout(
-        height=800,
+        height=750,
         **DARK_LAYOUT
     )
     fig.update_layout(
@@ -448,22 +456,33 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
                     font=dict(size=10, color='#c9d1d9'))
     )
     
+    # Custom subplot titles as annotations for better styling
+    fig.add_annotation(
+        text=f'<b>Consensus Estimate Trail</b> — {company_name}',
+        x=0.5, y=1.08, xref='paper', yref='paper',
+        showarrow=False, font=dict(size=14, color='#c9d1d9')
+    )
+    fig.add_annotation(
+        text=f'<b>Forecast Accuracy Funnel</b> — {len(all_quarters)} quarters analyzed',
+        x=0.5, y=0.34, xref='paper', yref='paper',
+        showarrow=False, font=dict(size=13, color='#c9d1d9')
+    )
+    
     for i in range(1, 3):
         fig.update_xaxes(gridcolor='#30363d', linecolor='#30363d', tickfont=dict(color='#8b949e'), row=i, col=1)
         fig.update_yaxes(gridcolor='#30363d', linecolor='#30363d', tickfont=dict(color='#8b949e'), row=i, col=1)
     
-    fig.update_xaxes(autorange='reversed', title_text='Months Before Fiscal Period End',
-                     title_font=dict(size=11, color='#8b949e'), row=1, col=1)
+    fig.update_xaxes(autorange='reversed', title_text='Months Before Fiscal Period End  →',
+                     title_font=dict(size=11, color='#8b949e'), dtick=1, row=1, col=1)
     fig.update_yaxes(title_text='EPS ($)', title_font=dict(size=11, color='#8b949e'), row=1, col=1)
     
-    fig.update_xaxes(autorange='reversed', title_text='Months Before Fiscal Period End',
-                     title_font=dict(size=11, color='#8b949e'), row=2, col=1)
+    fig.update_xaxes(autorange='reversed', title_text='Months Before Fiscal Period End  →',
+                     title_font=dict(size=11, color='#8b949e'), dtick=1, row=2, col=1)
     fig.update_yaxes(title_text='|% Error|', title_font=dict(size=11, color='#8b949e'),
                      rangemode='tozero', row=2, col=1)
     
-    for ann in fig.layout.annotations:
-        if ann.font is None or (hasattr(ann, 'text') and '←' not in str(ann.text) and 'Converges' not in str(ann.text)):
-            ann.font = dict(size=13, color='#c9d1d9')
+    # Clean up the empty subplot_titles annotations
+    fig.layout.annotations = [a for a in fig.layout.annotations if a.text != '']
     
     return fig.to_json(), metrics
 
