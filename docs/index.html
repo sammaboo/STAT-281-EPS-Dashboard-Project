@@ -779,7 +779,7 @@ function updateComparison() {
 function updatePredictability() {
     var ticker = document.getElementById('predictability-select').value;
     var url = '/api/chart/predictability?' + (ticker ? 'ticker=' + ticker + '&' : '') + getYearParams().substring(1);
-    fetch(url)
+    staticFetch(url)
         .then(response => response.json())
         .then(data => {
             if (data.chart) {

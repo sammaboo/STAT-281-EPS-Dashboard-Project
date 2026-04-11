@@ -294,6 +294,10 @@ def rewrite_html_for_static(html):
     # Replace all fetch('/api/...) calls with staticFetch
     html = html.replace("fetch('/api/", "staticFetch('/api/")
     
+    # Also catch fetch(url) where url is a variable holding an /api/ path
+    # These appear in updatePredictability and similar functions
+    html = re.sub(r'\bfetch\(url\)', 'staticFetch(url)', html)
+    
     return html
 
 
