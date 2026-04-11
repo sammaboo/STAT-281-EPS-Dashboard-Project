@@ -98,6 +98,119 @@
         return pred;
     }
 
+    // ---- Holt-Winters (Triple Exponential Smoothing) ----
+    function hwFit(eps, sp, alpha, beta, gamma) {
+        var n = eps.length;
+        // Initialize level, trend, seasonal
+        var l = avg(eps.slice(0, sp));
+        var b = 0;
+        if (sp < n) b = (avg(eps.slice(sp, Math.min(2 * sp, n))) - avg(eps.slice(0, sp))) / sp;
+        var s = [];
+        for (var i = 0; i < sp; i++) s.push(eps[i] - l);
+        // Run through data
+        var levels = [l], trends = [b], seasons = s.slice();
+        var sse = 0;
+        for (var t = sp; t < n; t++) {
+            var si = seasons[t % sp];
+            var lNew = alpha * (eps[t] - si) + (1 - alpha) * (l + b);
+            var bNew = beta * (lNew - l) + (1 - beta) * b;
+            var sNew = gamma * (eps[t] - lNew) + (1 - gamma) * si;
+            var fitted = l + b + si;
+            sse += (eps[t] - fitted) * (eps[t] - fitted);
+            l = lNew; b = bNew;
+            seasons[t % sp] = sNew;
+            levels.push(l); trends.push(b);
+        }
+        return { l: l, b: b, s: seasons, sse: sse };
+    }
+    function predHoltWinters(eps, per) {
+        var n = eps.length;
+        var sp = Math.min(4, Math.floor(n / 2));
+        // If not enough data for seasonality, use double exponential (trend only)
+        if (n < 2 * sp || sp < 2) {
+            // Double exponential smoothing (Holt's method)
+            var alpha = 0.3, beta = 0.1;
+            var l = eps[0], b = n > 1 ? eps[1] - eps[0] : 0;
+            for (var i = 1; i < n; i++) {
+                var lNew = alpha * eps[i] + (1 - alpha) * (l + b);
+                var bNew = beta * (lNew - l) + (1 - beta) * b;
+                l = lNew; b = bNew;
+            }
+            var pred = [];
+            for (var i = 0; i < per; i++) pred.push(l + b * (i + 1));
+            return pred;
+        }
+        // Grid search for best alpha, beta, gamma
+        var best = null, bestSSE = Infinity;
+        var vals = [0.1, 0.2, 0.3, 0.5, 0.7, 0.9];
+        for (var ai = 0; ai < vals.length; ai++) {
+            for (var bi = 0; bi < vals.length; bi++) {
+                for (var gi = 0; gi < vals.length; gi++) {
+                    var res = hwFit(eps, sp, vals[ai], vals[bi], vals[gi]);
+                    if (res.sse < bestSSE) { bestSSE = res.sse; best = res; }
+                }
+            }
+        }
+        var pred = [];
+        for (var i = 0; i < per; i++) {
+            pred.push(best.l + best.b * (i + 1) + best.s[(n + i) % sp]);
+        }
+        return pred;
+    }
+
+    // ---- SARIMA approximation ----
+    // Simplified: difference(d=1), seasonal difference if enough data, then AR(1) forecast
+    function predSarima(eps, per) {
+        var n = eps.length;
+        if (n < 3) {
+            var rt = n > 1 ? eps[n - 1] - eps[n - 2] : 0;
+            var p = []; for (var i = 0; i < per; i++) p.push(eps[n - 1] + rt * (i + 1)); return p;
+        }
+        var sp = 4; // seasonal period (quarterly)
+        var useSeasonal = n >= 8;
+
+        // First difference
+        var diff = [];
+        for (var i = 1; i < n; i++) diff.push(eps[i] - eps[i - 1]);
+
+        // Seasonal difference of the first-differenced series
+        var sdiff = diff;
+        if (useSeasonal && diff.length > sp) {
+            sdiff = [];
+            for (var i = sp; i < diff.length; i++) sdiff.push(diff[i] - diff[i - sp]);
+        }
+
+        // AR(1) coefficient from autocorrelation of sdiff
+        var phi = 0;
+        if (sdiff.length > 1) {
+            var m = avg(sdiff), c0 = 0, c1 = 0;
+            for (var i = 0; i < sdiff.length; i++) c0 += (sdiff[i] - m) * (sdiff[i] - m);
+            for (var i = 1; i < sdiff.length; i++) c1 += (sdiff[i] - m) * (sdiff[i - 1] - m);
+            phi = c0 > 0 ? c1 / c0 : 0;
+            phi = Math.max(-0.95, Math.min(0.95, phi)); // clamp for stability
+        }
+
+        // Forecast by reversing differences
+        var pred = [];
+        var lastDiff = diff[diff.length - 1];
+        var lastVal = eps[n - 1];
+        for (var i = 0; i < per; i++) {
+            // AR(1) step on differenced series
+            var nextDiff = phi * lastDiff + avg(diff) * (1 - phi);
+            // Add seasonal component if available
+            if (useSeasonal && n > sp) {
+                var sIdx = n - sp + i;
+                if (sIdx >= 0 && sIdx < n - 1) {
+                    nextDiff += (eps[sIdx + 1] - eps[sIdx]) - avg(diff);
+                }
+            }
+            lastVal = lastVal + nextDiff;
+            lastDiff = nextDiff;
+            pred.push(lastVal);
+        }
+        return pred;
+    }
+
     // ---- Backtest confidence ----
     function backtest(eps, est, method) {
         var n = eps.length, ho = Math.min(4, Math.floor(n / 2));
@@ -107,6 +220,8 @@
         else if (method === 'exponential') bt = predExp(tr, ho);
         else if (method === 'moving_avg') bt = predMA(tr, ho);
         else if (method === 'analyst') bt = predAnalyst(tr, te, ho);
+        else if (method === 'holt_winters') bt = predHoltWinters(tr, ho);
+        else if (method === 'sarima') bt = predSarima(tr, ho);
         else bt = Array(ho).fill(tr[tr.length - 1]);
         var errs = [];
         for (var i = 0; i < ho; i++) if (act[i] !== 0) errs.push(Math.abs(bt[i] - act[i]) / Math.abs(act[i]));
@@ -132,6 +247,8 @@
         else if (method === 'exponential') pred = predExp(eps, periods);
         else if (method === 'moving_avg') pred = predMA(eps, periods);
         else if (method === 'analyst') pred = predAnalyst(eps, est, periods);
+        else if (method === 'holt_winters') pred = predHoltWinters(eps, periods);
+        else if (method === 'sarima') pred = predSarima(eps, periods);
         else return null;
         var fd = futureDates(dates[dates.length - 1], periods);
         var bt = backtest(eps, est, method);

@@ -37,7 +37,7 @@ function _applyYearRange(data, ys, ye) {
     }
     return new Response(JSON.stringify(data), {headers: {'Content-Type': 'application/json'}});
 }
-var _clientMethods = {linear:1, exponential:1, moving_avg:1, analyst:1};
+var _clientMethods = {linear:1, exponential:1, moving_avg:1, analyst:1, holt_winters:1, sarima:1};
 function staticFetch(url) {
     var parts = url.split('?');
     var path = parts[0].replace('/api/chart/', '').replace('/api/', '');
