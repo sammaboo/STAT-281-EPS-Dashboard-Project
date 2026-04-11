@@ -17,8 +17,11 @@ env/
 Thumbs.db
 .DS_Store
 
-# Data files (large CSVs)
+# Data files (large CSVs in root, not in docs/)
 *.csv
 
 # Temp files
 temp_*.py
+
+# Don't ignore the docs/ output (GitHub Pages serves this)
+!docs/
