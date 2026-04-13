@@ -1509,7 +1509,7 @@ def predict_eps(df, ticker, method='linear', periods=4, timeframe='all', start_d
         'method': method
     }, eps_history
 
-def create_prediction_chart(df, ticker='JNJ', method='linear', timeframe='all', start_date=None, end_date=None):
+def create_prediction_chart(df, ticker='JNJ', method='linear', timeframe='all', start_date=None, end_date=None, surprise_method='seasonal_avg'):
     """Create EPS prediction chart with historical data and forecast"""
     import numpy as np
     
@@ -1635,20 +1635,34 @@ def create_prediction_chart(df, ticker='JNJ', method='linear', timeframe='all', 
     ), row=2, col=1)
     
     # --- Predicted surprise bars for future quarters ---
-    # Use seasonal quarterly averages to predict future surprises
     hist_dates_dt = pd.to_datetime(prediction_data['historical_dates'])
-    hist_quarters = hist_dates_dt.quarter
     hist_surprises = prediction_data['historical_surprises']
-    q_avgs = {}
-    for q_num, s_val in zip(hist_quarters, hist_surprises):
-        q_avgs.setdefault(q_num, []).append(s_val)
-    q_avgs = {k: np.mean(v) for k, v in q_avgs.items()}
-    
     future_dates_dt = pd.to_datetime(prediction_data['future_dates'])
-    predicted_surprises = []
-    for fd in future_dates_dt:
-        fq = fd.quarter
-        predicted_surprises.append(q_avgs.get(fq, prediction_data['avg_surprise_pct']))
+    
+    if surprise_method == 'overall_avg':
+        avg_s = np.mean(hist_surprises) if len(hist_surprises) > 0 else 0
+        predicted_surprises = [avg_s] * len(future_dates_dt)
+    elif surprise_method == 'last_year':
+        # Use the most recent surprise for each calendar quarter
+        last_by_q = {}
+        for dt, sv in zip(hist_dates_dt, hist_surprises):
+            last_by_q[dt.quarter] = sv
+        predicted_surprises = [last_by_q.get(fd.quarter, prediction_data['avg_surprise_pct']) for fd in future_dates_dt]
+    elif surprise_method == 'trend':
+        # Linear trend extrapolation of surprise values
+        if len(hist_surprises) >= 2:
+            x_vals = np.arange(len(hist_surprises))
+            coeffs = np.polyfit(x_vals, hist_surprises, 1)
+            predicted_surprises = [float(coeffs[0] * (len(hist_surprises) + i) + coeffs[1]) for i in range(len(future_dates_dt))]
+        else:
+            predicted_surprises = [prediction_data['avg_surprise_pct']] * len(future_dates_dt)
+    else:  # seasonal_avg (default)
+        hist_quarters = hist_dates_dt.quarter
+        q_avgs = {}
+        for q_num, s_val in zip(hist_quarters, hist_surprises):
+            q_avgs.setdefault(q_num, []).append(s_val)
+        q_avgs = {k: np.mean(v) for k, v in q_avgs.items()}
+        predicted_surprises = [q_avgs.get(fd.quarter, prediction_data['avg_surprise_pct']) for fd in future_dates_dt]
     
     pred_surp_colors = ['rgba(240,136,62,0.7)' for _ in predicted_surprises]
     fig.add_trace(go.Bar(
@@ -1973,8 +1987,9 @@ def api_prediction():
     timeframe = request.args.get('timeframe', 'all')
     start_date = request.args.get('start_date', None)
     end_date = request.args.get('end_date', None)
+    surprise_method = request.args.get('surprise_method', 'seasonal_avg')
     df = load_data()
-    chart = create_prediction_chart(df, ticker, method, timeframe, start_date=start_date, end_date=end_date)
+    chart = create_prediction_chart(df, ticker, method, timeframe, start_date=start_date, end_date=end_date, surprise_method=surprise_method)
     return jsonify({'chart': chart})
 
 @app.route('/api/chart/surprise_analysis')

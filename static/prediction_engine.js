@@ -270,7 +270,8 @@
     }
 
     // ---- Build prediction chart (2-row subplot) ----
-    function buildPredChart(allQ, pred, ticker, method, isSub) {
+    function buildPredChart(allQ, pred, ticker, method, isSub, surpriseMethod) {
+        if (!surpriseMethod) surpriseMethod = 'seasonal_avg';
         var traces = [];
 
         // Faded full history background (when sub-range)
@@ -304,22 +305,51 @@
         var cs = pred.historical_surprises.map(function(s) { return s >= 0 ? GREEN : RED; });
         traces.push({ x: pred.historical_dates, y: pred.historical_surprises, type: 'bar', name: 'Surprise %', marker: { color: cs }, showlegend: false, xaxis: 'x2', yaxis: 'y2' });
 
-        // Predicted surprise bars using seasonal quarterly averages
-        var qAvg = {};
-        var qCnt = {};
-        for (var si = 0; si < pred.historical_dates.length; si++) {
-            var qn = new Date(pred.historical_dates[si] + 'T00:00:00').getMonth();
-            var qk = qn < 3 ? 1 : qn < 6 ? 2 : qn < 9 ? 3 : 4;
-            if (!qAvg[qk]) { qAvg[qk] = 0; qCnt[qk] = 0; }
-            qAvg[qk] += pred.historical_surprises[si];
-            qCnt[qk]++;
+        // Predicted surprise bars
+        var predSurp;
+        if (surpriseMethod === 'overall_avg') {
+            var totalS = 0;
+            for (var oi = 0; oi < pred.historical_surprises.length; oi++) totalS += pred.historical_surprises[oi];
+            var avgS = pred.historical_surprises.length ? totalS / pred.historical_surprises.length : 0;
+            predSurp = pred.future_dates.map(function() { return avgS; });
+        } else if (surpriseMethod === 'last_year') {
+            var lastByQ = {};
+            for (var li = 0; li < pred.historical_dates.length; li++) {
+                var lm = new Date(pred.historical_dates[li] + 'T00:00:00').getMonth();
+                var lq = lm < 3 ? 1 : lm < 6 ? 2 : lm < 9 ? 3 : 4;
+                lastByQ[lq] = pred.historical_surprises[li];
+            }
+            predSurp = pred.future_dates.map(function(fd) {
+                var fm = new Date(fd + 'T00:00:00').getMonth();
+                var fq = fm < 3 ? 1 : fm < 6 ? 2 : fm < 9 ? 3 : 4;
+                return lastByQ[fq] !== undefined ? lastByQ[fq] : pred.avg_surprise_pct;
+            });
+        } else if (surpriseMethod === 'trend') {
+            var n = pred.historical_surprises.length;
+            if (n >= 2) {
+                var sx = 0, sy = 0, sxy = 0, sxx = 0;
+                for (var ti = 0; ti < n; ti++) { sx += ti; sy += pred.historical_surprises[ti]; sxy += ti * pred.historical_surprises[ti]; sxx += ti * ti; }
+                var slope = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+                var intercept = (sy - slope * sx) / n;
+                predSurp = pred.future_dates.map(function(fd, fi) { return slope * (n + fi) + intercept; });
+            } else {
+                predSurp = pred.future_dates.map(function() { return pred.avg_surprise_pct; });
+            }
+        } else { // seasonal_avg (default)
+            var qAvg = {}, qCnt = {};
+            for (var si = 0; si < pred.historical_dates.length; si++) {
+                var qn = new Date(pred.historical_dates[si] + 'T00:00:00').getMonth();
+                var qk = qn < 3 ? 1 : qn < 6 ? 2 : qn < 9 ? 3 : 4;
+                if (!qAvg[qk]) { qAvg[qk] = 0; qCnt[qk] = 0; }
+                qAvg[qk] += pred.historical_surprises[si]; qCnt[qk]++;
+            }
+            for (var qk2 in qAvg) qAvg[qk2] /= qCnt[qk2];
+            predSurp = pred.future_dates.map(function(fd) {
+                var fq = new Date(fd + 'T00:00:00').getMonth();
+                var fqn = fq < 3 ? 1 : fq < 6 ? 2 : fq < 9 ? 3 : 4;
+                return qAvg[fqn] !== undefined ? qAvg[fqn] : pred.avg_surprise_pct;
+            });
         }
-        for (var qk2 in qAvg) qAvg[qk2] /= qCnt[qk2];
-        var predSurp = pred.future_dates.map(function(fd) {
-            var fq = new Date(fd + 'T00:00:00').getMonth();
-            var fqn = fq < 3 ? 1 : fq < 6 ? 2 : fq < 9 ? 3 : 4;
-            return qAvg[fqn] !== undefined ? qAvg[fqn] : pred.avg_surprise_pct;
-        });
         traces.push({ x: pred.future_dates, y: predSurp, type: 'bar', name: 'Predicted Surprise', marker: { color: predSurp.map(function() { return 'rgba(240,136,62,0.7)'; }), line: { color: ORANGE, width: 1.5 } }, opacity: 0.6, showlegend: true, xaxis: 'x2', yaxis: 'y2' });
 
         var mt = method.charAt(0).toUpperCase() + method.slice(1).replace('_', ' ');

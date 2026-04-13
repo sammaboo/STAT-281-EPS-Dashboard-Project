@@ -207,29 +207,32 @@ function staticFetch(url) {
     var sd = params.get('start_date'), ed = params.get('end_date');
     var _h = {'Content-Type': 'application/json'};
 
-    // Client-side prediction: when training window slider sets a date range
-    if (sd && ed && window._predEngine) {
+    // Client-side prediction: when training window slider sets a date range OR surprise method changed
+    var _sm = params.get('surprise_method') || 'seasonal_avg';
+    var _needClientCompute = (sd && ed) || (_sm !== 'seasonal_avg');
+    if (_needClientCompute && window._predEngine) {
         var _tk = params.get('ticker') || 'JNJ';
         var _mt = params.get('method') || 'linear';
+        var _isSub = !!(sd && ed);
         if (path === 'prediction' && _clientMethods[_mt]) {
             return window._predEngine.load(_tk).then(function(d) {
-                var p = window._predEngine.compute(d.quarters, _mt, 4, sd, ed);
+                var p = _isSub ? window._predEngine.compute(d.quarters, _mt, 4, sd, ed) : window._predEngine.compute(d.quarters, _mt, 4);
                 if (!p) return new Response('{"chart":null}', {headers: _h});
-                var c = window._predEngine.buildPredChart(d.quarters, p, _tk, _mt, true);
+                var c = window._predEngine.buildPredChart(d.quarters, p, _tk, _mt, _isSub, _sm);
                 return new Response(JSON.stringify({chart: JSON.stringify(c)}), {headers: _h});
             });
         }
         if (path === 'surprise_analysis') {
             return window._predEngine.load(_tk).then(function(d) {
-                var filt = d.quarters.filter(function(q) { return q.d >= sd && q.d <= ed; });
+                var filt = _isSub ? d.quarters.filter(function(q) { return q.d >= sd && q.d <= ed; }) : d.quarters;
                 if (filt.length < 2) return new Response('{"chart":null}', {headers: _h});
-                var c = window._predEngine.buildSurpChart(d.quarters, filt, _tk, true);
+                var c = window._predEngine.buildSurpChart(d.quarters, filt, _tk, _isSub);
                 return new Response(JSON.stringify({chart: JSON.stringify(c)}), {headers: _h});
             });
         }
         if (path === 'prediction_data' && _clientMethods[_mt]) {
             return window._predEngine.load(_tk).then(function(d) {
-                var p = window._predEngine.compute(d.quarters, _mt, 4, sd, ed);
+                var p = _isSub ? window._predEngine.compute(d.quarters, _mt, 4, sd, ed) : window._predEngine.compute(d.quarters, _mt, 4);
                 return new Response(JSON.stringify(p || {}), {headers: _h});
             });
         }

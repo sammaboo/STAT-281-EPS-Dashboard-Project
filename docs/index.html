@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776034208"></script>
+<script src="static/prediction_engine.js?v=1776035951"></script>
 <script>
 var _sfCache = {};
 function _applyYearRange(data, ys, ye) {
@@ -43,29 +43,32 @@ function staticFetch(url) {
     var sd = params.get('start_date'), ed = params.get('end_date');
     var _h = {'Content-Type': 'application/json'};
 
-    // Client-side prediction: when training window slider sets a date range
-    if (sd && ed && window._predEngine) {
+    // Client-side prediction: when training window slider sets a date range OR surprise method changed
+    var _sm = params.get('surprise_method') || 'seasonal_avg';
+    var _needClientCompute = (sd && ed) || (_sm !== 'seasonal_avg');
+    if (_needClientCompute && window._predEngine) {
         var _tk = params.get('ticker') || 'JNJ';
         var _mt = params.get('method') || 'linear';
+        var _isSub = !!(sd && ed);
         if (path === 'prediction' && _clientMethods[_mt]) {
             return window._predEngine.load(_tk).then(function(d) {
-                var p = window._predEngine.compute(d.quarters, _mt, 4, sd, ed);
+                var p = _isSub ? window._predEngine.compute(d.quarters, _mt, 4, sd, ed) : window._predEngine.compute(d.quarters, _mt, 4);
                 if (!p) return new Response('{"chart":null}', {headers: _h});
-                var c = window._predEngine.buildPredChart(d.quarters, p, _tk, _mt, true);
+                var c = window._predEngine.buildPredChart(d.quarters, p, _tk, _mt, _isSub, _sm);
                 return new Response(JSON.stringify({chart: JSON.stringify(c)}), {headers: _h});
             });
         }
         if (path === 'surprise_analysis') {
             return window._predEngine.load(_tk).then(function(d) {
-                var filt = d.quarters.filter(function(q) { return q.d >= sd && q.d <= ed; });
+                var filt = _isSub ? d.quarters.filter(function(q) { return q.d >= sd && q.d <= ed; }) : d.quarters;
                 if (filt.length < 2) return new Response('{"chart":null}', {headers: _h});
-                var c = window._predEngine.buildSurpChart(d.quarters, filt, _tk, true);
+                var c = window._predEngine.buildSurpChart(d.quarters, filt, _tk, _isSub);
                 return new Response(JSON.stringify({chart: JSON.stringify(c)}), {headers: _h});
             });
         }
         if (path === 'prediction_data' && _clientMethods[_mt]) {
             return window._predEngine.load(_tk).then(function(d) {
-                var p = window._predEngine.compute(d.quarters, _mt, 4, sd, ed);
+                var p = _isSub ? window._predEngine.compute(d.quarters, _mt, 4, sd, ed) : window._predEngine.compute(d.quarters, _mt, 4);
                 return new Response(JSON.stringify(p || {}), {headers: _h});
             });
         }
@@ -496,7 +499,7 @@ function staticFetch(url) {
                 </select>
             </div>
             <div>
-                <label for="prediction-method" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Prediction Method</label>
+                <label for="prediction-method" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">EPS Method</label>
                 <select id="prediction-method" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 160px;">
                     <option value="linear" selected>Linear Trend</option>
                     <option value="exponential">Exponential Smoothing</option>
@@ -504,6 +507,15 @@ function staticFetch(url) {
                     <option value="analyst">Analyst + Surprise</option>
                     <option value="holt_winters">Holt-Winters</option>
                     <option value="sarima">SARIMA</option>
+                </select>
+            </div>
+            <div>
+                <label for="surprise-method" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Surprise Prediction</label>
+                <select id="surprise-method" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 170px;">
+                    <option value="seasonal_avg" selected>Seasonal Average</option>
+                    <option value="overall_avg">Overall Average</option>
+                    <option value="last_year">Last Year's Pattern</option>
+                    <option value="trend">Trend Extrapolation</option>
                 </select>
             </div>
             <div class="ms-auto">
@@ -545,14 +557,7 @@ function staticFetch(url) {
             <div class="col-md-6">
                 <div class="p-3" style="background-color: #21262d; border-radius: 6px;">
                     <h6 style="color: #c9d1d9;">Method Info</h6>
-                    <div id="method-info" style="color: #8b949e; font-size: 0.9rem;">
-                        <strong>Linear:</strong> Projects trend using linear regression on historical EPS.<br>
-                        <strong>Exponential:</strong> Weights recent quarters more heavily.<br>
-                        <strong>Moving Avg:</strong> Uses 4-quarter average with trend.<br>
-                        <strong>Analyst:</strong> Adjusts estimates using historical surprise patterns.<br>
-                        <strong>Holt-Winters:</strong> Triple exponential smoothing with trend & seasonality.<br>
-                        <strong>SARIMA:</strong> Seasonal ARIMA model capturing autocorrelation & seasonality.
-                    </div>
+                    <div id="method-info" style="color: #8b949e; font-size: 0.9rem;"></div>
                 </div>
             </div>
         </div>
@@ -976,8 +981,9 @@ function updatePredictionCharts() {
         rangeParams = '&start_date=' + quarters[rangeSliderState.leftIndex].date + '&end_date=' + quarters[rangeSliderState.rightIndex].date;
     }
     
+    var surpriseMethod = document.getElementById('surprise-method').value;
     // Update prediction chart
-    staticFetch('/api/chart/prediction?ticker=' + ticker + '&method=' + method + rangeParams)
+    staticFetch('/api/chart/prediction?ticker=' + ticker + '&method=' + method + '&surprise_method=' + surpriseMethod + rangeParams)
         .then(response => response.json())
         .then(data => {
             if (data.chart) {
@@ -1058,7 +1064,30 @@ document.getElementById('prediction-ticker').addEventListener('change', function
     initRangeSlider();
     updatePredictionCharts();
 });
-document.getElementById('prediction-method').addEventListener('change', updatePredictionCharts);
+document.getElementById('prediction-method').addEventListener('change', function() { updatePredictionCharts(); updateMethodInfo(); });
+document.getElementById('surprise-method').addEventListener('change', function() { updatePredictionCharts(); updateMethodInfo(); });
+
+var _epsMethodInfo = {
+    linear: 'Projects trend using linear regression on historical EPS.',
+    exponential: 'Weights recent quarters more heavily using exponential smoothing.',
+    moving_avg: 'Uses 4-quarter moving average with trend adjustment.',
+    analyst: 'Adjusts analyst consensus estimates by historical surprise patterns.',
+    holt_winters: 'Triple exponential smoothing capturing trend & seasonality.',
+    sarima: 'Seasonal ARIMA model capturing autocorrelation & seasonality.'
+};
+var _surpMethodInfo = {
+    seasonal_avg: 'Groups historical surprises by calendar quarter (Q1\u2013Q4) and uses each quarter\u2019s average as the prediction for that same future quarter.',
+    overall_avg: 'Uses the simple average of all historical surprises as a flat prediction for every future quarter.',
+    last_year: 'Uses the most recent observed surprise for each calendar quarter as the prediction (e.g., last Q3 surprise \u2192 next Q3).',
+    trend: 'Fits a linear trend line through historical surprises and extrapolates forward in time.'
+};
+function updateMethodInfo() {
+    var em = document.getElementById('prediction-method');
+    var sm = document.getElementById('surprise-method');
+    var html = '<strong>' + em.options[em.selectedIndex].text + ':</strong> ' + (_epsMethodInfo[em.value] || '') + '<br><hr style="border-color:#30363d;margin:6px 0;"><strong>Surprise \u2014 ' + sm.options[sm.selectedIndex].text + ':</strong> ' + (_surpMethodInfo[sm.value] || '');
+    document.getElementById('method-info').innerHTML = html;
+}
+updateMethodInfo();
 </script>
 
 

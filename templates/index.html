@@ -141,7 +141,7 @@
                 </select>
             </div>
             <div>
-                <label for="prediction-method" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Prediction Method</label>
+                <label for="prediction-method" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">EPS Method</label>
                 <select id="prediction-method" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 160px;">
                     <option value="linear" selected>Linear Trend</option>
                     <option value="exponential">Exponential Smoothing</option>
@@ -149,6 +149,15 @@
                     <option value="analyst">Analyst + Surprise</option>
                     <option value="holt_winters">Holt-Winters</option>
                     <option value="sarima">SARIMA</option>
+                </select>
+            </div>
+            <div>
+                <label for="surprise-method" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Surprise Prediction</label>
+                <select id="surprise-method" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 170px;">
+                    <option value="seasonal_avg" selected>Seasonal Average</option>
+                    <option value="overall_avg">Overall Average</option>
+                    <option value="last_year">Last Year's Pattern</option>
+                    <option value="trend">Trend Extrapolation</option>
                 </select>
             </div>
             <div class="ms-auto">
@@ -190,14 +199,7 @@
             <div class="col-md-6">
                 <div class="p-3" style="background-color: #21262d; border-radius: 6px;">
                     <h6 style="color: #c9d1d9;">Method Info</h6>
-                    <div id="method-info" style="color: #8b949e; font-size: 0.9rem;">
-                        <strong>Linear:</strong> Projects trend using linear regression on historical EPS.<br>
-                        <strong>Exponential:</strong> Weights recent quarters more heavily.<br>
-                        <strong>Moving Avg:</strong> Uses 4-quarter average with trend.<br>
-                        <strong>Analyst:</strong> Adjusts estimates using historical surprise patterns.<br>
-                        <strong>Holt-Winters:</strong> Triple exponential smoothing with trend & seasonality.<br>
-                        <strong>SARIMA:</strong> Seasonal ARIMA model capturing autocorrelation & seasonality.
-                    </div>
+                    <div id="method-info" style="color: #8b949e; font-size: 0.9rem;"></div>
                 </div>
             </div>
         </div>
@@ -615,8 +617,9 @@ function updatePredictionCharts() {
         rangeParams = '&start_date=' + quarters[rangeSliderState.leftIndex].date + '&end_date=' + quarters[rangeSliderState.rightIndex].date;
     }
     
+    var surpriseMethod = document.getElementById('surprise-method').value;
     // Update prediction chart
-    fetch('/api/chart/prediction?ticker=' + ticker + '&method=' + method + rangeParams)
+    fetch('/api/chart/prediction?ticker=' + ticker + '&method=' + method + '&surprise_method=' + surpriseMethod + rangeParams)
         .then(response => response.json())
         .then(data => {
             if (data.chart) {
@@ -697,7 +700,30 @@ document.getElementById('prediction-ticker').addEventListener('change', function
     initRangeSlider();
     updatePredictionCharts();
 });
-document.getElementById('prediction-method').addEventListener('change', updatePredictionCharts);
+document.getElementById('prediction-method').addEventListener('change', function() { updatePredictionCharts(); updateMethodInfo(); });
+document.getElementById('surprise-method').addEventListener('change', function() { updatePredictionCharts(); updateMethodInfo(); });
+
+var _epsMethodInfo = {
+    linear: 'Projects trend using linear regression on historical EPS.',
+    exponential: 'Weights recent quarters more heavily using exponential smoothing.',
+    moving_avg: 'Uses 4-quarter moving average with trend adjustment.',
+    analyst: 'Adjusts analyst consensus estimates by historical surprise patterns.',
+    holt_winters: 'Triple exponential smoothing capturing trend & seasonality.',
+    sarima: 'Seasonal ARIMA model capturing autocorrelation & seasonality.'
+};
+var _surpMethodInfo = {
+    seasonal_avg: 'Groups historical surprises by calendar quarter (Q1\u2013Q4) and uses each quarter\u2019s average as the prediction for that same future quarter.',
+    overall_avg: 'Uses the simple average of all historical surprises as a flat prediction for every future quarter.',
+    last_year: 'Uses the most recent observed surprise for each calendar quarter as the prediction (e.g., last Q3 surprise \u2192 next Q3).',
+    trend: 'Fits a linear trend line through historical surprises and extrapolates forward in time.'
+};
+function updateMethodInfo() {
+    var em = document.getElementById('prediction-method');
+    var sm = document.getElementById('surprise-method');
+    var html = '<strong>' + em.options[em.selectedIndex].text + ':</strong> ' + (_epsMethodInfo[em.value] || '') + '<br><hr style="border-color:#30363d;margin:6px 0;"><strong>Surprise \u2014 ' + sm.options[sm.selectedIndex].text + ':</strong> ' + (_surpMethodInfo[sm.value] || '');
+    document.getElementById('method-info').innerHTML = html;
+}
+updateMethodInfo();
 </script>
 {% endif %}
 {% endblock %}
