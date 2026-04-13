@@ -1158,11 +1158,12 @@ def create_company_comparison_chart(df, ticker1='JNJ', ticker2=None, year_start=
               f'| {n_quarters} quarters, {n_obs} observations</sub>',
         xaxis_title='Months Before Earnings',
         yaxis_title='Forecast Error %',
-        height=500,
+        height=520,
+        margin=dict(t=120),
         legend=dict(
             orientation='h',
             yanchor='bottom',
-            y=1.06,
+            y=1.12,
             xanchor='center',
             x=0.5,
             font=dict(color='#c9d1d9', size=10)
