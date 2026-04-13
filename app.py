@@ -73,7 +73,7 @@ def get_summary_stats(df):
         'total_records': total_records
     }
 
-def create_eps_history_chart(df, featured_ticker='JNJ'):
+def create_eps_history_chart(df, featured_ticker='JNJ', year_start=None, year_end=None):
     """Create historical EPS estimates vs actuals chart for a single company"""
     if df is None:
         return None
@@ -93,6 +93,12 @@ def create_eps_history_chart(df, featured_ticker='JNJ'):
     eps_data = eps_data.dropna(subset=['meanest', 'actual'])
     eps_data['fpedats'] = pd.to_datetime(eps_data['fpedats'])
     eps_data['statpers'] = pd.to_datetime(eps_data['statpers'])
+    
+    # Apply year filter
+    if year_start:
+        eps_data = eps_data[eps_data['fpedats'].dt.year >= year_start]
+    if year_end:
+        eps_data = eps_data[eps_data['fpedats'].dt.year <= year_end]
     
     if 'fpi' in eps_data.columns:
         eps_data = eps_data[eps_data['fpi'].isin(['6', '7', '8', '9', 6, 7, 8, 9])]
@@ -153,7 +159,7 @@ def create_eps_history_chart(df, featured_ticker='JNJ'):
     
     return fig.to_json()
 
-def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
+def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6, year_start=None, year_end=None):
     """Create 2-panel revision trail: beat/miss colored trails with avg path + accuracy funnel"""
     import numpy as np
     if df is None:
@@ -169,6 +175,12 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
     
     if 'fpi' in ticker_data.columns:
         ticker_data = ticker_data[ticker_data['fpi'].isin(['6', '7', '8', '9', 6, 7, 8, 9])]
+    
+    # Apply year filter
+    if year_start:
+        ticker_data = ticker_data[ticker_data['fpedats'].dt.year >= year_start]
+    if year_end:
+        ticker_data = ticker_data[ticker_data['fpedats'].dt.year <= year_end]
     
     ticker_data = ticker_data.drop_duplicates(subset=['ticker', 'fpedats', 'statpers'])
     ticker_data = ticker_data.sort_values(['fpedats', 'statpers'])
@@ -615,7 +627,7 @@ def create_pead_chart(df):
     
     return fig.to_json()
 
-def create_dispersion_chart(df, ticker='JNJ'):
+def create_dispersion_chart(df, ticker='JNJ', year_start=None, year_end=None):
     """Create analyst estimate dispersion chart showing consensus uncertainty over time"""
     if df is None:
         return None
@@ -630,6 +642,12 @@ def create_dispersion_chart(df, ticker='JNJ'):
     
     if 'fpi' in ticker_data.columns:
         ticker_data = ticker_data[ticker_data['fpi'].isin(['6', '7', '8', '9', 6, 7, 8, 9])]
+    
+    # Apply year filter
+    if year_start:
+        ticker_data = ticker_data[ticker_data['fpedats'].dt.year >= year_start]
+    if year_end:
+        ticker_data = ticker_data[ticker_data['fpedats'].dt.year <= year_end]
     
     # Get last observation per fiscal quarter
     ticker_data = ticker_data[ticker_data['statpers'] <= ticker_data['fpedats']]
@@ -718,8 +736,9 @@ def create_dispersion_chart(df, ticker='JNJ'):
         line=dict(color='#f0883e', width=2),
         mode='lines+markers',
         marker=dict(size=5),
+        xaxis='x2',
         yaxis='y4'
-    ), row=2, col=1)
+    ))
     
     company_name = ticker
     if 'company_name' in df.columns:
@@ -731,7 +750,8 @@ def create_dispersion_chart(df, ticker='JNJ'):
         title=f'Analyst Estimate Dispersion - {company_name}<br><sub>Wide bands = high uncertainty. Narrow bands = strong consensus.</sub>',
         height=550,
         yaxis4=dict(
-            overlaying='y3', side='right',
+            overlaying='y2', side='right',
+            anchor='x2',
             gridcolor='rgba(0,0,0,0)',
             tickfont=dict(color='#f0883e'),
             title=dict(text=disp_name, font=dict(color='#f0883e'))
@@ -742,6 +762,15 @@ def create_dispersion_chart(df, ticker='JNJ'):
     fig.update_yaxes(gridcolor='#30363d', linecolor='#30363d', tickfont=dict(color='#8b949e'))
     fig.update_yaxes(title_text='EPS ($)', row=1, col=1)
     fig.update_yaxes(title_text='# Analysts', row=2, col=1)
+    # Re-apply y4 styling after blanket update_yaxes
+    fig.update_layout(
+        yaxis4=dict(
+            gridcolor='rgba(0,0,0,0)',
+            anchor='x2',
+            tickfont=dict(color='#f0883e'),
+            title=dict(text=disp_name, font=dict(color='#f0883e'))
+        )
+    )
     
     for annotation in fig['layout']['annotations']:
         annotation['font'] = dict(color='#c9d1d9', size=12)
@@ -1726,7 +1755,7 @@ def create_prediction_chart(df, ticker='JNJ', method='linear', timeframe='all', 
         legend=dict(
             orientation='h',
             yanchor='bottom',
-            y=1.02,
+            y=1.08,
             xanchor='center',
             x=0.5,
             font=dict(color='#c9d1d9')
@@ -1935,8 +1964,10 @@ def index():
 def api_eps_history():
     """API to get historical EPS chart for a featured ticker"""
     ticker = request.args.get('ticker', 'JNJ')
+    year_start = request.args.get('year_start', type=int)
+    year_end = request.args.get('year_end', type=int)
     df = load_data()
-    chart = create_eps_history_chart(df, ticker)
+    chart = create_eps_history_chart(df, ticker, year_start, year_end)
     return jsonify({'chart': chart})
 
 @app.route('/api/chart/revision_trail')
@@ -1945,8 +1976,10 @@ def api_revision_trail():
     ticker = request.args.get('ticker', 'JNJ')
     num_quarters = request.args.get('num_quarters', 6, type=int)
     num_quarters = max(2, min(20, num_quarters))
+    year_start = request.args.get('year_start', type=int)
+    year_end = request.args.get('year_end', type=int)
     df = load_data()
-    chart, metrics = create_revision_trail_chart(df, ticker, num_quarters)
+    chart, metrics = create_revision_trail_chart(df, ticker, num_quarters, year_start, year_end)
     return jsonify({'chart': chart, 'metrics': metrics})
 
 @app.route('/api/chart/pead')
@@ -1960,8 +1993,10 @@ def api_pead():
 def api_dispersion():
     """API to get estimate dispersion chart"""
     ticker = request.args.get('ticker', 'JNJ')
+    year_start = request.args.get('year_start', type=int)
+    year_end = request.args.get('year_end', type=int)
     df = load_data()
-    chart = create_dispersion_chart(df, ticker)
+    chart = create_dispersion_chart(df, ticker, year_start, year_end)
     return jsonify({'chart': chart})
 
 @app.route('/api/chart/revenue_time')

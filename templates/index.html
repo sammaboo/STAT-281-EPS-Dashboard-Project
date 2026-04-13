@@ -32,44 +32,136 @@
 </div>
 {% else %}
 
-<!-- Interactive Analysis Section -->
+<!-- Section 1: Historical EPS Analysis -->
 <div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
     <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
         <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="mb-0" style="color: #c9d1d9;">Interactive Analysis</h5>
+            <h5 class="mb-0" style="color: #c9d1d9;">Historical EPS Analysis</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Compare two companies side-by-side across EPS predictability (current vs. lagged EPS with OLS trendline) and estimate convergence - how analyst forecasts approach actual earnings over time. Use the dropdowns to swap companies and filter by year range.</div>
+                <div class="story-point-tooltip">Detailed analysis of the selected company's earnings history. The main chart shows estimate vs actual EPS over time. The revision trail shows how analyst consensus evolves in dollar terms as each earnings date approaches - lines converge toward the actual. The accuracy funnel below aggregates all historical quarters to show how forecast error narrows over time (P25-P75 shaded band). The dispersion chart shows how much analysts agree or disagree.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
             <div>
-                <label for="ticker1-select" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company 1</label>
-                <select id="ticker1-select" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                <label for="hist-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
+                <select id="hist-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
                     {% for t in tickers %}
                     <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="ticker2-select" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company 2</label>
-                <select id="ticker2-select" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
-                    {% for t in tickers %}
-                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker2 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="year-start" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Start Year</label>
-                <select id="year-start" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                <label for="hist-year-start" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Start Year</label>
+                <select id="hist-year-start" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
                     {% for y in range(min_year, max_year + 1) %}
                     <option value="{{ y }}" {% if y == min_year %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="year-end" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">End Year</label>
-                <select id="year-end" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                <label for="hist-year-end" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">End Year</label>
+                <select id="hist-year-end" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-container"><div id="eps-history-chart"></div></div>
+        <div class="row mt-3">
+            <div class="col-lg-12">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span style="color: #8b949e; font-size: 0.85rem;">Revision Trail</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="revision-quarters" style="color: #8b949e; font-size: 0.8rem; white-space: nowrap;">Quarters:</label>
+                        <select id="revision-quarters" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 80px;">
+                            <option value="4">4</option>
+                            <option value="6" selected>6</option>
+                            <option value="8">8</option>
+                            <option value="12">12</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="revision-trail-chart"></div></div>
+                <div id="revision-metrics" class="row mt-2 g-2">
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Walk-Down</div>
+                            <div id="metric-walkdown" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Accuracy (Median)</div>
+                            <div id="metric-accuracy" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Beat Rate</div>
+                            <div id="metric-beat-rate" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Avg Surprise</div>
+                            <div id="metric-avg-surprise" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Converges &lt;5%</div>
+                            <div id="metric-convergence" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
+                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Quarters</div>
+                            <div id="metric-quarters" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-lg-12"><div class="chart-container"><div id="dispersion-chart"></div></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 2: EPS Predictability -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0" style="color: #c9d1d9;">EPS Predictability</h5>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">How predictable are a company's earnings? This scatter plot shows current EPS vs. lagged EPS with an OLS trendline. A high R-squared means past earnings are a strong predictor of future earnings. Use the dropdowns to compare different companies and time periods.</div>
+            </div>
+        </div>
+        <div class="d-flex gap-3 flex-wrap align-items-end">
+            <div>
+                <label for="pred-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
+                <select id="pred-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    {% for t in tickers %}
+                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pred-year-start" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Start Year</label>
+                <select id="pred-year-start" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == min_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="pred-year-end" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">End Year</label>
+                <select id="pred-year-end" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
                     {% for y in range(min_year, max_year + 1) %}
                     <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}
@@ -123,37 +215,10 @@
                 </div>
             </div>
         </div>
-        <div class="row">
-            <div class="col-12"><div class="chart-container"><div id="comparison-chart"></div></div></div>
-        </div>
     </div>
 </div>
 
-<!-- Stock Returns Analysis Section -->
-<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
-    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h5 class="mb-0" style="color: #c9d1d9;">EPS & Stock Returns Analysis</h5>
-                <small style="color: #8b949e;">Requires refreshing data from WRDS to include CRSP returns</small>
-            </div>
-            <div class="story-point-wrapper">
-                <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Explore the relationship between earnings surprises and stock returns using CRSP market data. The scatter plot tests whether beating analyst estimates drives higher returns across all companies with a single OLS trendline. The dual-axis trend chart overlays EPS with stock returns for a single company over time.</div>
-            </div>
-        </div>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-12"><div class="chart-container"><div id="eps-surprise-returns-chart"></div></div></div>
-        </div>
-        <div class="row">
-            <div class="col-12"><div class="chart-container"><div id="eps-returns-trend-chart"></div></div></div>
-        </div>
-    </div>
-</div>
-
-<!-- EPS Prediction Section -->
+<!-- Section 3: EPS Predictions & Forecasting -->
 <div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
     <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -238,80 +303,109 @@
     </div>
 </div>
 
+<!-- Section 4: Company Comparison -->
 <div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
     <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
-        <div class="d-flex justify-content-between align-items-start">
-            <h5 class="mb-0" style="color: #c9d1d9;">Historical Analysis</h5>
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0" style="color: #c9d1d9;">Company Comparison</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Detailed analysis of the selected company's earnings history. The main chart shows estimate vs actual EPS over time. The revision trail shows how analyst consensus evolves in dollar terms as each earnings date approaches - lines converge toward the actual. The accuracy funnel below aggregates all historical quarters to show how forecast error narrows over time (P25-P75 shaded band). The dispersion chart shows how much analysts agree or disagree.</div>
+                <div class="story-point-tooltip">Compare two companies side-by-side across estimate convergence - how analyst forecasts approach actual earnings over time. Use the dropdowns to swap companies and filter by year range.</div>
+            </div>
+        </div>
+        <div class="d-flex gap-3 flex-wrap align-items-end">
+            <div>
+                <label for="comp-ticker1" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company 1</label>
+                <select id="comp-ticker1" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    {% for t in tickers %}
+                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="comp-ticker2" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company 2</label>
+                <select id="comp-ticker2" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    {% for t in tickers %}
+                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker2 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="comp-year-start" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Start Year</label>
+                <select id="comp-year-start" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == min_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="comp-year-end" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">End Year</label>
+                <select id="comp-year-end" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
     </div>
     <div class="card-body">
-        <div class="chart-container"><div id="eps-history-chart"></div></div>
-        <div class="row mt-3">
-            <div class="col-lg-12">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="color: #8b949e; font-size: 0.85rem;">Revision Trail</span>
-                    <div class="d-flex align-items-center gap-2">
-                        <label for="revision-quarters" style="color: #8b949e; font-size: 0.8rem; white-space: nowrap;">Quarters:</label>
-                        <select id="revision-quarters" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 80px;">
-                            <option value="4">4</option>
-                            <option value="6" selected>6</option>
-                            <option value="8">8</option>
-                            <option value="12">12</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="chart-container"><div id="revision-trail-chart"></div></div>
-                <div id="revision-metrics" class="row mt-2 g-2">
-                    <div class="col-2">
-                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
-                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Walk-Down</div>
-                            <div id="metric-walkdown" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">-</div>
-                        </div>
-                    </div>
-                    <div class="col-2">
-                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
-                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Accuracy (Median)</div>
-                            <div id="metric-accuracy" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">-</div>
-                        </div>
-                    </div>
-                    <div class="col-2">
-                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
-                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Beat Rate</div>
-                            <div id="metric-beat-rate" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
-                        </div>
-                    </div>
-                    <div class="col-2">
-                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
-                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Avg Surprise</div>
-                            <div id="metric-avg-surprise" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
-                        </div>
-                    </div>
-                    <div class="col-2">
-                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
-                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Converges &lt;5%</div>
-                            <div id="metric-convergence" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">-</div>
-                        </div>
-                    </div>
-                    <div class="col-2">
-                        <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
-                            <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Quarters</div>
-                            <div id="metric-quarters" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-lg-12"><div class="chart-container"><div id="dispersion-chart"></div></div></div>
+        <div class="row">
+            <div class="col-12"><div class="chart-container"><div id="comparison-chart"></div></div></div>
         </div>
     </div>
 </div>
 
-<!-- Post-Earnings Announcement Drift -->
+<!-- Section 5: EPS & Stock Returns Analysis -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <h5 class="mb-0" style="color: #c9d1d9;">EPS & Stock Returns Analysis</h5>
+                <small style="color: #8b949e;">Requires refreshing data from WRDS to include CRSP returns</small>
+            </div>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge">Story Point</span>
+                <div class="story-point-tooltip">Explore the relationship between earnings surprises and stock returns using CRSP market data. The scatter plot tests whether beating analyst estimates drives higher returns across all companies with a single OLS trendline. The dual-axis trend chart overlays EPS with stock returns for a single company over time.</div>
+            </div>
+        </div>
+        <div class="d-flex gap-3 flex-wrap align-items-end">
+            <div>
+                <label for="returns-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
+                <select id="returns-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    {% for t in tickers %}
+                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="returns-year-start" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Start Year</label>
+                <select id="returns-year-start" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == min_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="returns-year-end" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">End Year</label>
+                <select id="returns-year-end" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
+                    {% for y in range(min_year, max_year + 1) %}
+                    <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-12"><div class="chart-container"><div id="eps-surprise-returns-chart"></div></div></div>
+        </div>
+        <div class="row">
+            <div class="col-12"><div class="chart-container"><div id="eps-returns-trend-chart"></div></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 6: Post-Earnings Announcement Drift -->
 <div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
     <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
         <div class="d-flex justify-content-between align-items-start">
@@ -327,6 +421,7 @@
     </div>
 </div>
 
+<!-- Section 7: Additional Metrics -->
 <div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
     <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
         <div class="d-flex justify-content-between align-items-start">
@@ -383,18 +478,19 @@ Object.keys(mapping).forEach(function(key) {
     }
 });
 
-// Interactive chart update functions
-function getYearParams() {
-    var yearStart = document.getElementById('year-start').value;
-    var yearEnd = document.getElementById('year-end').value;
+// Helper: get year params from section-specific selects
+function getSectionYearParams(prefix) {
+    var yearStart = document.getElementById(prefix + '-year-start').value;
+    var yearEnd = document.getElementById(prefix + '-year-end').value;
     return '&year_start=' + yearStart + '&year_end=' + yearEnd;
 }
 
+// === Historical Analysis section (hist-ticker, hist-year-start, hist-year-end) ===
 function updateEpsHistory() {
-    var ticker1 = document.getElementById('ticker1-select').value;
-    fetch('/api/chart/eps_history?ticker=' + ticker1)
-        .then(response => response.json())
-        .then(data => {
+    var ticker = document.getElementById('hist-ticker').value;
+    fetch('/api/chart/eps_history?ticker=' + ticker + getSectionYearParams('hist'))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('eps-history-chart', c.data, c.layout);
@@ -403,11 +499,11 @@ function updateEpsHistory() {
 }
 
 function updateRevisionTrail() {
-    var ticker1 = document.getElementById('ticker1-select').value;
+    var ticker = document.getElementById('hist-ticker').value;
     var numQ = document.getElementById('revision-quarters').value;
-    fetch('/api/chart/revision_trail?ticker=' + ticker1 + '&num_quarters=' + numQ)
-        .then(response => response.json())
-        .then(data => {
+    fetch('/api/chart/revision_trail?ticker=' + ticker + '&num_quarters=' + numQ + getSectionYearParams('hist'))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('revision-trail-chart', c.data, c.layout);
@@ -425,10 +521,10 @@ function updateRevisionTrail() {
 }
 
 function updateDispersion() {
-    var ticker1 = document.getElementById('ticker1-select').value;
-    fetch('/api/chart/dispersion?ticker=' + ticker1)
-        .then(response => response.json())
-        .then(data => {
+    var ticker = document.getElementById('hist-ticker').value;
+    fetch('/api/chart/dispersion?ticker=' + ticker + getSectionYearParams('hist'))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('dispersion-chart', c.data, c.layout);
@@ -436,25 +532,19 @@ function updateDispersion() {
         });
 }
 
-function updateComparison() {
-    var ticker1 = document.getElementById('ticker1-select').value;
-    var ticker2 = document.getElementById('ticker2-select').value;
-    fetch('/api/chart/comparison?ticker1=' + ticker1 + '&ticker2=' + ticker2 + getYearParams())
-        .then(response => response.json())
-        .then(data => {
-            if (data.chart) {
-                var c = JSON.parse(data.chart);
-                Plotly.react('comparison-chart', c.data, c.layout);
-            }
-        });
+function updateHistSection() {
+    updateEpsHistory();
+    updateRevisionTrail();
+    updateDispersion();
 }
 
+// === Predictability section (pred-ticker, pred-year-start, pred-year-end) ===
 function updatePredictability() {
-    var ticker = document.getElementById('ticker1-select').value;
-    var url = '/api/chart/predictability?ticker=' + ticker + '&' + getYearParams().substring(1);
+    var ticker = document.getElementById('pred-ticker').value;
+    var url = '/api/chart/predictability?ticker=' + ticker + getSectionYearParams('pred');
     fetch(url)
-        .then(response => response.json())
-        .then(data => {
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('predictability-chart', c.data, c.layout);
@@ -471,10 +561,25 @@ function updatePredictability() {
         });
 }
 
+// === Company Comparison section (comp-ticker1, comp-ticker2, comp-year-start, comp-year-end) ===
+function updateComparison() {
+    var ticker1 = document.getElementById('comp-ticker1').value;
+    var ticker2 = document.getElementById('comp-ticker2').value;
+    fetch('/api/chart/comparison?ticker1=' + ticker1 + '&ticker2=' + ticker2 + getSectionYearParams('comp'))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.chart) {
+                var c = JSON.parse(data.chart);
+                Plotly.react('comparison-chart', c.data, c.layout);
+            }
+        });
+}
+
+// === Stock Returns section (returns-ticker, returns-year-start, returns-year-end) ===
 function updateEpsSurpriseReturns() {
-    fetch('/api/chart/eps_surprise_returns?' + getYearParams().substring(1))
-        .then(response => response.json())
-        .then(data => {
+    fetch('/api/chart/eps_surprise_returns?' + getSectionYearParams('returns').substring(1))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('eps-surprise-returns-chart', c.data, c.layout);
@@ -483,10 +588,10 @@ function updateEpsSurpriseReturns() {
 }
 
 function updateEpsReturnsTrend() {
-    var ticker = document.getElementById('ticker1-select').value;
-    fetch('/api/chart/eps_returns_trend?ticker=' + ticker + getYearParams())
-        .then(response => response.json())
-        .then(data => {
+    var ticker = document.getElementById('returns-ticker').value;
+    fetch('/api/chart/eps_returns_trend?ticker=' + ticker + getSectionYearParams('returns'))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('eps-returns-trend-chart', c.data, c.layout);
@@ -494,17 +599,12 @@ function updateEpsReturnsTrend() {
         });
 }
 
-function updateAllInteractiveCharts() {
-    updateEpsHistory();
-    updateRevisionTrail();
-    updateDispersion();
-    updateComparison();
-    updatePredictability();
+function updateReturnsSection() {
     updateEpsSurpriseReturns();
     updateEpsReturnsTrend();
 }
 
-// Range slider state & logic
+// === Range slider state & logic (for Prediction section) ===
 var rangeSliderState = { quarters: [], leftIndex: 0, rightIndex: 0, dragging: null };
 
 function initRangeSlider() {
@@ -594,7 +694,6 @@ function bindSliderEvents() {
     leftHandle.addEventListener('touchstart', function(e) { onHandleDown('left', e); }, {passive: false});
     rightHandle.addEventListener('touchstart', function(e) { onHandleDown('right', e); }, {passive: false});
 
-    // Click on track to jump nearest handle
     container.addEventListener('mousedown', function(e) {
         if (e.target === leftHandle || e.target === rightHandle) return;
         var idx = getIndexFromX(e.clientX);
@@ -644,7 +743,7 @@ function bindSliderEvents() {
     document.addEventListener('touchend', onUp);
 }
 
-// Prediction functions
+// === Prediction functions ===
 function updatePredictionCharts() {
     var ticker = document.getElementById('prediction-ticker').value;
     var method = document.getElementById('prediction-method').value;
@@ -659,32 +758,28 @@ function updatePredictionCharts() {
     }
     
     var surpriseMethod = document.getElementById('surprise-method').value;
-    // Update prediction chart
     fetch('/api/chart/prediction?ticker=' + ticker + '&method=' + method + '&surprise_method=' + surpriseMethod + rangeParams)
-        .then(response => response.json())
-        .then(data => {
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('prediction-chart', c.data, c.layout);
             }
         });
     
-    // Update surprise analysis chart
     fetch('/api/chart/surprise_analysis?ticker=' + ticker + rangeParams)
-        .then(response => response.json())
-        .then(data => {
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('surprise-analysis-chart', c.data, c.layout);
             }
         });
     
-    // Get prediction data for summary
     fetch('/api/prediction_data?ticker=' + ticker + '&method=' + method + rangeParams)
-        .then(response => response.json())
-        .then(data => {
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data) {
-                // Update confidence badge
                 var confidenceBadge = document.getElementById('prediction-confidence');
                 var confidence = Math.round(data.confidence * 100);
                 var badgeText = 'Model Confidence: ' + confidence + '%';
@@ -700,7 +795,6 @@ function updatePredictionCharts() {
                     confidenceBadge.style.backgroundColor = '#da3633';
                 }
                 
-                // Update prediction summary
                 var summaryHtml = '<strong>Next 4 Quarters Forecast:</strong><br>';
                 for (var i = 0; i < data.future_dates.length; i++) {
                     summaryHtml += data.future_dates[i] + ': <span style="color: #f0883e;">$' + data.predicted_eps[i].toFixed(2) + '</span><br>';
@@ -713,30 +807,39 @@ function updatePredictionCharts() {
         });
 }
 
-// Initialize prediction charts on page load
+// === Initialize on page load ===
 document.addEventListener('DOMContentLoaded', function() {
     initRangeSlider();
     updatePredictionCharts();
     updateRevisionTrail();
-});
-
-// Event listeners for dropdowns
-document.getElementById('ticker1-select').addEventListener('change', function() {
-    updateEpsHistory();
-    updateRevisionTrail();
-    updateDispersion();
-    updateComparison();
-    updateEpsReturnsTrend();
     updatePredictability();
 });
-document.getElementById('revision-quarters').addEventListener('change', updateRevisionTrail);
-document.getElementById('ticker2-select').addEventListener('change', function() {
-    updateComparison();
-});
-document.getElementById('year-start').addEventListener('change', updateAllInteractiveCharts);
-document.getElementById('year-end').addEventListener('change', updateAllInteractiveCharts);
 
-// Prediction event listeners
+// === Event listeners per section ===
+
+// Historical Analysis section
+document.getElementById('hist-ticker').addEventListener('change', updateHistSection);
+document.getElementById('hist-year-start').addEventListener('change', updateHistSection);
+document.getElementById('hist-year-end').addEventListener('change', updateHistSection);
+document.getElementById('revision-quarters').addEventListener('change', updateRevisionTrail);
+
+// Predictability section
+document.getElementById('pred-ticker').addEventListener('change', updatePredictability);
+document.getElementById('pred-year-start').addEventListener('change', updatePredictability);
+document.getElementById('pred-year-end').addEventListener('change', updatePredictability);
+
+// Company Comparison section
+document.getElementById('comp-ticker1').addEventListener('change', updateComparison);
+document.getElementById('comp-ticker2').addEventListener('change', updateComparison);
+document.getElementById('comp-year-start').addEventListener('change', updateComparison);
+document.getElementById('comp-year-end').addEventListener('change', updateComparison);
+
+// Stock Returns section
+document.getElementById('returns-ticker').addEventListener('change', updateReturnsSection);
+document.getElementById('returns-year-start').addEventListener('change', updateReturnsSection);
+document.getElementById('returns-year-end').addEventListener('change', updateReturnsSection);
+
+// Prediction section
 document.getElementById('prediction-ticker').addEventListener('change', function() {
     initRangeSlider();
     updatePredictionCharts();
