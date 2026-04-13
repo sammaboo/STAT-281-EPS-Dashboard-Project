@@ -4,35 +4,56 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+        background-color: #161b22;
+        color: #c9d1d9;
+        border: 1px solid #30363d;
+    }
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        color: #8b949e;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        color: #c9d1d9 !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #238636 !important;
+        border-color: #238636 !important;
+        color: white !important;
+    }
+    table.dataTable thead th {
+        background-color: #161b22;
+        color: #c9d1d9;
+        border-bottom-color: #30363d;
+    }
+    table.dataTable tbody td {
+        color: #c9d1d9;
+        border-bottom-color: #21262d;
+    }
+    table.dataTable tbody tr:hover td {
+        background-color: #1c2128 !important;
+    }
+    table.dataTable.table-striped tbody tr:nth-child(odd) td {
+        background-color: #0d1117;
+    }
+    table.dataTable.table-striped tbody tr:nth-child(even) td {
+        background-color: #161b22;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="stat-card">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>Data Table View</h3>
-        <a href="/refresh" class="btn refresh-btn">Refresh Data</a>
+        <h3>Company EPS Summary</h3>
     </div>
     
     {% if data %}
     <div class="table-responsive">
         {{ data | safe }}
-    </div>
-    
-    <div class="mt-3">
-        <small class="text-muted">
-            <strong>Columns:</strong>
-            <ul class="mb-0">
-                <li><strong>ticker</strong> - Company ticker symbol</li>
-                <li><strong>fyear</strong> - Fiscal year</li>
-                <li><strong>sale</strong> - Revenue (in millions)</li>
-                <li><strong>ni</strong> - Net Income (in millions)</li>
-                <li><strong>ebitda</strong> - EBITDA (in millions)</li>
-                <li><strong>at</strong> - Total Assets (in millions)</li>
-                <li><strong>meanest</strong> - Mean EPS estimate</li>
-                <li><strong>actual</strong> - Actual EPS</li>
-                <li><strong>numest</strong> - Number of analyst estimates</li>
-            </ul>
-        </small>
     </div>
     {% else %}
     <div class="alert alert-warning">
@@ -45,32 +66,34 @@
 
 {% block extra_scripts %}
 {% if data %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script>
 $(document).ready(function() {
     $('table').DataTable({
         pageLength: 25,
-        order: [[0, 'asc'], [1, 'desc']],
+        order: [[0, 'asc'], [2, 'desc']],
+        lengthMenu: [10, 25, 50, 100],
         columnDefs: [
             {
-                targets: [2, 3, 4, 5],  // sale, ni, ebitda, at columns
+                targets: [3, 4, 5],
                 render: function(data, type, row) {
-                    if (type === 'display' && data) {
-                        return parseFloat(data).toLocaleString('en-US', {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0
-                        });
+                    if (type === 'display' && data && data !== '-') {
+                        var val = parseFloat(data);
+                        if (isNaN(val)) return data;
+                        return val.toFixed(2);
                     }
                     return data;
                 }
             },
             {
-                targets: [6, 7],  // meanest, actual columns
+                targets: [7, 8, 9],
                 render: function(data, type, row) {
-                    if (type === 'display' && data) {
-                        return parseFloat(data).toFixed(2);
+                    if (type === 'display' && data && data !== '-') {
+                        var val = parseFloat(data);
+                        if (isNaN(val)) return data;
+                        return val.toLocaleString('en-US', {maximumFractionDigits: 0});
                     }
                     return data;
                 }

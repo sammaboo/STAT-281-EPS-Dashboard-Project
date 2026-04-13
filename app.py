@@ -142,7 +142,7 @@ def create_eps_history_chart(df, featured_ticker='JNJ'):
             )
     
     fig.update_layout(
-        title=f'Historical EPS: Analyst Estimates vs Actuals — {company_name}',
+        title=f'Historical EPS: Analyst Estimates vs Actuals - {company_name}',
         xaxis_title='Fiscal Period End',
         yaxis_title='EPS ($)',
         height=450,
@@ -459,12 +459,12 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
     
     # Custom subplot titles as annotations for better styling
     fig.add_annotation(
-        text=f'<b>Consensus Estimate Trail</b> — {company_name}',
+        text=f'<b>Consensus Estimate Trail</b> - {company_name}',
         x=0.5, y=1.08, xref='paper', yref='paper',
         showarrow=False, font=dict(size=14, color='#c9d1d9')
     )
     fig.add_annotation(
-        text=f'<b>Forecast Accuracy Funnel</b> — {len(all_quarters)} quarters analyzed',
+        text=f'<b>Forecast Accuracy Funnel</b> - {len(all_quarters)} quarters analyzed',
         x=0.5, y=0.34, xref='paper', yref='paper',
         showarrow=False, font=dict(size=13, color='#c9d1d9')
     )
@@ -713,7 +713,7 @@ def create_dispersion_chart(df, ticker='JNJ'):
             company_name = f"{ticker} - {names.iloc[0]}"
     
     fig.update_layout(
-        title=f'Analyst Estimate Dispersion — {company_name}<br><sub>Wide bands = high uncertainty. Narrow bands = strong consensus.</sub>',
+        title=f'Analyst Estimate Dispersion - {company_name}<br><sub>Wide bands = high uncertainty. Narrow bands = strong consensus.</sub>',
         height=550,
         yaxis4=dict(
             overlaying='y3', side='right',
@@ -2332,28 +2332,27 @@ def get_refresh_status():
 
 @app.route('/data')
 def data_table():
-    """View raw data as table"""
+    """View concise company summary table"""
     df = load_data()
     if df is None:
         return render_template('data.html', data=None)
     
-    # Get unique ticker/quarter combinations for cleaner view
-    agg_dict = {
-        'sale': 'first',
-        'ni': 'first',
-        'at': 'first',
-        'meanest': 'last',
-        'actual': 'last',
-        'numest': 'last'
-    }
-    # Include fpi if available (fiscal period indicator)
-    group_cols = ['ticker', 'fpedats']
-    if 'fpi' in df.columns:
-        group_cols.append('fpi')
-    summary = df.groupby(group_cols).agg(agg_dict).reset_index()
+    # Build a concise annual summary per company per fiscal year
+    # Use the last estimate row per ticker/fyear for EPS data
+    latest = df.sort_values('statpers').groupby(['ticker', 'fyear']).last().reset_index()
+    
+    summary = latest[['ticker', 'company_name', 'fyear', 'meanest', 'actual', 'eps_surprise', 'numest', 'sale', 'ni', 'at']].copy()
+    summary.columns = ['Ticker', 'Company', 'Year', 'Est. EPS', 'Actual EPS', 'Surprise %', '# Analysts', 'Revenue ($M)', 'Net Income ($M)', 'Total Assets ($M)']
+    summary = summary.sort_values(['Ticker', 'Year'], ascending=[True, False])
+    
+    # Round numeric columns
+    for col in ['Est. EPS', 'Actual EPS', 'Surprise %']:
+        summary[col] = summary[col].round(2)
+    for col in ['Revenue ($M)', 'Net Income ($M)', 'Total Assets ($M)']:
+        summary[col] = summary[col].round(0)
     
     return render_template('data.html', 
-                         data=summary.to_html(classes='table table-striped table-hover', index=False))
+                         data=summary.to_html(classes='table table-striped table-hover', index=False, na_rep='-'))
 
 if __name__ == '__main__':
     print("Starting WRDS Dashboard...")

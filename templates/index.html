@@ -39,7 +39,7 @@
             <h5 class="mb-0" style="color: #c9d1d9;">Interactive Analysis</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Compare two companies side-by-side across EPS predictability (current vs. lagged EPS with OLS trendline) and estimate convergence — how analyst forecasts approach actual earnings over time. Use the dropdowns to swap companies and filter by year range.</div>
+                <div class="story-point-tooltip">Compare two companies side-by-side across EPS predictability (current vs. lagged EPS with OLS trendline) and estimate convergence - how analyst forecasts approach actual earnings over time. Use the dropdowns to swap companies and filter by year range.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
@@ -130,7 +130,7 @@
             <h5 class="mb-0" style="color: #c9d1d9;">EPS Predictions & Forecasting</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Forecast future quarterly EPS using six methods: linear regression, exponential smoothing, moving average, analyst-adjusted estimates, Holt-Winters (triple exponential smoothing with seasonality), or SARIMA (seasonal ARIMA). The surprise pattern chart shows historical beat/miss trends. Surprise analysis breaks down seasonality by quarter and tracks the rolling average over time. Adjust the time frame to focus predictions on recent data. <strong>Confidence scores are computed via leave-last-4-out backtesting</strong> — the model is trained on all data except the last 4 quarters, then its predictions are compared to actual values. The resulting MAPE (Mean Absolute % Error) is converted into a confidence score.</div>
+                <div class="story-point-tooltip">Forecast future quarterly EPS using six methods: linear regression, exponential smoothing, moving average, analyst-adjusted estimates, Holt-Winters (triple exponential smoothing with seasonality), or SARIMA (seasonal ARIMA). The surprise pattern chart shows historical beat/miss trends. Surprise analysis breaks down seasonality by quarter and tracks the rolling average over time. Adjust the time frame to focus predictions on recent data. <strong>Confidence scores are computed via leave-last-4-out backtesting</strong> - the model is trained on all data except the last 4 quarters, then its predictions are compared to actual values. The resulting MAPE (Mean Absolute % Error) is converted into a confidence score.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
@@ -214,7 +214,7 @@
             <h5 class="mb-0" style="color: #c9d1d9;">Historical Analysis</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Detailed analysis of the selected company's earnings history. The main chart shows estimate vs actual EPS over time. The revision trail shows how analyst consensus evolves in dollar terms as each earnings date approaches — lines converge toward the ★ actual. The accuracy funnel below aggregates all historical quarters to show how forecast error narrows over time (P25–P75 shaded band). The dispersion chart shows how much analysts agree or disagree.</div>
+                <div class="story-point-tooltip">Detailed analysis of the selected company's earnings history. The main chart shows estimate vs actual EPS over time. The revision trail shows how analyst consensus evolves in dollar terms as each earnings date approaches - lines converge toward the actual. The accuracy funnel below aggregates all historical quarters to show how forecast error narrows over time (P25-P75 shaded band). The dispersion chart shows how much analysts agree or disagree.</div>
             </div>
         </div>
     </div>
@@ -239,37 +239,37 @@
                     <div class="col-2">
                         <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
                             <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Walk-Down</div>
-                            <div id="metric-walkdown" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">—</div>
+                            <div id="metric-walkdown" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">-</div>
                         </div>
                     </div>
                     <div class="col-2">
                         <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
                             <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Accuracy (Median)</div>
-                            <div id="metric-accuracy" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">—</div>
+                            <div id="metric-accuracy" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">-</div>
                         </div>
                     </div>
                     <div class="col-2">
                         <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
                             <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Beat Rate</div>
-                            <div id="metric-beat-rate" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">—</div>
+                            <div id="metric-beat-rate" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
                         </div>
                     </div>
                     <div class="col-2">
                         <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
                             <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Avg Surprise</div>
-                            <div id="metric-avg-surprise" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">—</div>
+                            <div id="metric-avg-surprise" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
                         </div>
                     </div>
                     <div class="col-2">
                         <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
                             <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Converges &lt;5%</div>
-                            <div id="metric-convergence" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">—</div>
+                            <div id="metric-convergence" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">-</div>
                         </div>
                     </div>
                     <div class="col-2">
                         <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center;">
                             <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Quarters</div>
-                            <div id="metric-quarters" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">—</div>
+                            <div id="metric-quarters" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">-</div>
                         </div>
                     </div>
                 </div>
@@ -384,12 +384,12 @@ function updateRevisionTrail() {
             }
             if (data.metrics) {
                 var m = data.metrics;
-                document.getElementById('metric-walkdown').textContent = m.walk_down_pct !== null ? m.walk_down_pct + '%' : '—';
-                document.getElementById('metric-accuracy').textContent = m.median_final_accuracy !== null ? m.median_final_accuracy + '%' : '—';
-                document.getElementById('metric-beat-rate').textContent = m.beat_rate !== null ? m.beat_rate + '%' : '—';
-                document.getElementById('metric-avg-surprise').textContent = m.avg_surprise !== null ? (m.avg_surprise > 0 ? '+' : '') + m.avg_surprise + '%' : '—';
-                document.getElementById('metric-convergence').textContent = m.convergence_month !== null ? m.convergence_month + ' mo' : '—';
-                document.getElementById('metric-quarters').textContent = m.quarters_analyzed !== null ? m.quarters_analyzed : '—';
+                document.getElementById('metric-walkdown').textContent = m.walk_down_pct !== null ? m.walk_down_pct + '%' : '-';
+                document.getElementById('metric-accuracy').textContent = m.median_final_accuracy !== null ? m.median_final_accuracy + '%' : '-';
+                document.getElementById('metric-beat-rate').textContent = m.beat_rate !== null ? m.beat_rate + '%' : '-';
+                document.getElementById('metric-avg-surprise').textContent = m.avg_surprise !== null ? (m.avg_surprise > 0 ? '+' : '') + m.avg_surprise + '%' : '-';
+                document.getElementById('metric-convergence').textContent = m.convergence_month !== null ? m.convergence_month + ' mo' : '-';
+                document.getElementById('metric-quarters').textContent = m.quarters_analyzed !== null ? m.quarters_analyzed : '-';
             }
         });
 }
@@ -524,7 +524,7 @@ function updateSliderUI() {
     if (rangeSliderState.leftIndex === 0 && rangeSliderState.rightIndex === n - 1) {
         display.textContent = 'All Time';
     } else {
-        display.textContent = quarters[rangeSliderState.leftIndex].label + '  —  ' + quarters[rangeSliderState.rightIndex].label;
+        display.textContent = quarters[rangeSliderState.leftIndex].label + '  -  ' + quarters[rangeSliderState.rightIndex].label;
     }
 }
 
