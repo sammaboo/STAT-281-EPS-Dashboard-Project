@@ -551,6 +551,14 @@ def create_pead_chart(df):
     eps_agg['next_q_ret'] = eps_agg.groupby('ticker')['quarterly_ret'].shift(-1)
     eps_agg = eps_agg.dropna(subset=['surprise_pct', 'next_q_ret'])
     
+    # Remove extreme outliers (beyond 1st/99th percentile) to avoid skewed charts
+    sp_lo, sp_hi = eps_agg['surprise_pct'].quantile([0.01, 0.99])
+    nr_lo, nr_hi = eps_agg['next_q_ret'].quantile([0.01, 0.99])
+    eps_agg = eps_agg[
+        (eps_agg['surprise_pct'] >= sp_lo) & (eps_agg['surprise_pct'] <= sp_hi) &
+        (eps_agg['next_q_ret'] >= nr_lo) & (eps_agg['next_q_ret'] <= nr_hi)
+    ]
+    
     # Bin into surprise quintiles
     eps_agg['surprise_bin'] = pd.qcut(eps_agg['surprise_pct'], 5, labels=['Q1\n(Big Miss)', 'Q2\n(Miss)', 'Q3\n(In-Line)', 'Q4\n(Beat)', 'Q5\n(Big Beat)'], duplicates='drop')
     
