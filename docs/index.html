@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776035951"></script>
+<script src="static/prediction_engine.js?v=1776043656"></script>
 <script>
 var _sfCache = {};
 function _applyYearRange(data, ys, ye) {
@@ -287,9 +287,7 @@ function staticFetch(url) {
                 <label for="year-start" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Start Year</label>
                 <select id="year-start" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
                     
-                    <option value="2019" selected>2019</option>
-                    
-                    <option value="2020" >2020</option>
+                    <option value="2020" selected>2020</option>
                     
                     <option value="2021" >2021</option>
                     
@@ -308,8 +306,6 @@ function staticFetch(url) {
             <div>
                 <label for="year-end" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">End Year</label>
                 <select id="year-end" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 100px;">
-                    
-                    <option value="2019" >2019</option>
                     
                     <option value="2020" >2020</option>
                     
@@ -831,7 +827,7 @@ function updateAllInteractiveCharts() {
 var rangeSliderState = { quarters: [], leftIndex: 0, rightIndex: 0, dragging: null };
 
 function initRangeSlider() {
-    var minYear = 2019;
+    var minYear = 2020;
     var maxYear = 2026;
     var quarters = [];
     var qEnds = {1: '-03-31', 2: '-06-30', 3: '-09-30', 4: '-12-31'};

@@ -1270,7 +1270,7 @@ def get_year_range(df):
     """Get min and max years from the data"""
     if df is None:
         return 2020, 2025
-    min_year = int(df['fyear'].min())
+    min_year = max(int(df['fyear'].min()), 2020)
     max_year = int(df['fyear'].max())
     return min_year, max_year
 
