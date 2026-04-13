@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776098366"></script>
+<script src="static/prediction_engine.js?v=1776099483"></script>
 <script>
 var _sfCache = {};
 var _h = {'Content-Type': 'application/json'};
@@ -909,7 +909,6 @@ function staticFetch(url) {
         <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
                 <h5 class="mb-0" style="color: #c9d1d9;">EPS & Stock Returns Analysis</h5>
-                <small style="color: #8b949e;">Requires refreshing data from WRDS to include CRSP returns</small>
             </div>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
@@ -920,6 +919,7 @@ function staticFetch(url) {
             <div>
                 <label for="returns-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
                 <select id="returns-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    <option value="ALL">All Companies</option>
                     
                     <option value="AAPL" >AAPL - APPLE INC</option>
                     
@@ -1220,6 +1220,13 @@ function updateEpsSurpriseReturns() {
 
 function updateEpsReturnsTrend() {
     var ticker = document.getElementById('returns-ticker').value;
+    var trendDiv = document.getElementById('eps-returns-trend-chart');
+    if (ticker === 'ALL') {
+        trendDiv.innerHTML = '';
+        trendDiv.parentElement.style.display = 'none';
+        return;
+    }
+    trendDiv.parentElement.style.display = '';
     staticFetch('/api/chart/eps_returns_trend?ticker=' + ticker + getSectionYearParams('returns'))
         .then(function(response) { return response.json(); })
         .then(function(data) {

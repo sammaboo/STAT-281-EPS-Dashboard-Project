@@ -121,8 +121,10 @@ def generate_api_files(df, ticker_symbols):
         write_json(os.path.join(d, f'{t}.json'), {'chart': chart})
     
     # --- EPS Surprise Returns (per ticker) ---
-    print(f"  eps_surprise_returns ({total} tickers)...")
+    print(f"  eps_surprise_returns ({total} tickers + ALL)...")
     d = os.path.join(api_dir, 'eps_surprise_returns')
+    chart = create_eps_surprise_returns_chart(df, 'ALL')
+    write_json(os.path.join(d, 'ALL.json'), {'chart': chart})
     for t in ticker_symbols:
         chart = create_eps_surprise_returns_chart(df, t)
         write_json(os.path.join(d, f'{t}.json'), {'chart': chart})
