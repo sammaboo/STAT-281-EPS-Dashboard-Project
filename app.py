@@ -944,9 +944,13 @@ def create_eps_predictability_chart(df, ticker=None, year_start=None, year_end=N
     if len(eps_agg) == 0:
         return None, None
     
+    # Add year column for client-side filtering on static site
+    eps_agg['_year'] = eps_agg['fpedats'].dt.year
+    
     # Single trendline for all data (don't color by ticker when showing all)
     fig = px.scatter(eps_agg, x='eps_lag', y='actual', 
                      hover_data=['ticker'] if not ticker else None,
+                     custom_data=['_year'],
                      trendline='ols',
                      title=title,
                      labels={'eps_lag': 'Previous Period EPS', 'actual': 'Current EPS', 'ticker': 'Company'})
