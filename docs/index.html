@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776063917"></script>
+<script src="static/prediction_engine.js?v=1776064228"></script>
 <script>
 var _sfCache = {};
 function _applyYearRange(data, ys, ye) {
@@ -329,66 +329,6 @@ function staticFetch(url) {
         <div class="row">
             <div class="col-12">
                 <div class="chart-container">
-                    <div class="d-flex justify-content-end mb-2">
-                        <select id="predictability-select" class="form-select form-select-sm" style="background-color: #21262d; color: #c9d1d9; border-color: #30363d; width: 200px;">
-                            <option value="">All Companies</option>
-                            
-                            <option value="AAPL">AAPL - APPLE INC</option>
-                            
-                            <option value="ABBV">ABBV - ABBVIE INC</option>
-                            
-                            <option value="ABT">ABT - ABBOTT LABORATORIES</option>
-                            
-                            <option value="ADBE">ADBE - ADOBE INC</option>
-                            
-                            <option value="AMZN">AMZN - AMAZON.COM INC</option>
-                            
-                            <option value="BMY">BMY - BRISTOL-MYERS SQUIBB CO</option>
-                            
-                            <option value="CSCO">CSCO - CISCO SYSTEMS INC</option>
-                            
-                            <option value="HD">HD - HOME DEPOT INC</option>
-                            
-                            <option value="IBM">IBM - INTL BUSINESS MACHINES CORP</option>
-                            
-                            <option value="INTC">INTC - INTEL CORP</option>
-                            
-                            <option value="JNJ">JNJ - JOHNSON &amp; JOHNSON</option>
-                            
-                            <option value="KO">KO - COCA-COLA CO</option>
-                            
-                            <option value="LLY">LLY - LILLY (ELI) &amp; CO</option>
-                            
-                            <option value="LOW">LOW - LOWE&#39;S COS INC</option>
-                            
-                            <option value="MCD">MCD - MCDONALD&#39;S CORP</option>
-                            
-                            <option value="MRK">MRK - MERCK &amp; CO INC</option>
-                            
-                            <option value="MSFT">MSFT - MICROSOFT CORP</option>
-                            
-                            <option value="NVDA">NVDA - NVIDIA CORP</option>
-                            
-                            <option value="ORCL">ORCL - ORACLE CORP</option>
-                            
-                            <option value="PEP">PEP - PEPSICO INC</option>
-                            
-                            <option value="PG">PG - PROCTER &amp; GAMBLE CO</option>
-                            
-                            <option value="QCOM">QCOM - QUALCOMM INC</option>
-                            
-                            <option value="TMO">TMO - THERMO FISHER SCIENTIFIC INC</option>
-                            
-                            <option value="TSLA">TSLA - TESLA INC</option>
-                            
-                            <option value="TXN">TXN - TEXAS INSTRUMENTS INC</option>
-                            
-                            <option value="UPS">UPS - UNITED PARCEL SERVICE INC</option>
-                            
-                            <option value="WMT">WMT - WALMART INC</option>
-                            
-                        </select>
-                    </div>
                     <div id="predictability-chart"></div>
                     <div class="row g-2 mt-2" id="predictability-stats">
                         <div class="col-2">
@@ -816,8 +756,8 @@ function updateComparison() {
 }
 
 function updatePredictability() {
-    var ticker = document.getElementById('predictability-select').value;
-    var url = '/api/chart/predictability?' + (ticker ? 'ticker=' + ticker + '&' : '') + getYearParams().substring(1);
+    var ticker = document.getElementById('ticker1-select').value;
+    var url = '/api/chart/predictability?ticker=' + ticker + '&' + getYearParams().substring(1);
     staticFetch(url)
         .then(response => response.json())
         .then(data => {
@@ -1093,12 +1033,12 @@ document.getElementById('ticker1-select').addEventListener('change', function() 
     updateDispersion();
     updateComparison();
     updateEpsReturnsTrend();
+    updatePredictability();
 });
 document.getElementById('revision-quarters').addEventListener('change', updateRevisionTrail);
 document.getElementById('ticker2-select').addEventListener('change', function() {
     updateComparison();
 });
-document.getElementById('predictability-select').addEventListener('change', updatePredictability);
 document.getElementById('year-start').addEventListener('change', updateAllInteractiveCharts);
 document.getElementById('year-end').addEventListener('change', updateAllInteractiveCharts);
 

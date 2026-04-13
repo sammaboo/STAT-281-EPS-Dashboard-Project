@@ -81,14 +81,6 @@
         <div class="row">
             <div class="col-12">
                 <div class="chart-container">
-                    <div class="d-flex justify-content-end mb-2">
-                        <select id="predictability-select" class="form-select form-select-sm" style="background-color: #21262d; color: #c9d1d9; border-color: #30363d; width: 200px;">
-                            <option value="">All Companies</option>
-                            {% for t in tickers %}
-                            <option value="{{ t.ticker }}">{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
                     <div id="predictability-chart"></div>
                     <div class="row g-2 mt-2" id="predictability-stats">
                         <div class="col-2">
@@ -458,8 +450,8 @@ function updateComparison() {
 }
 
 function updatePredictability() {
-    var ticker = document.getElementById('predictability-select').value;
-    var url = '/api/chart/predictability?' + (ticker ? 'ticker=' + ticker + '&' : '') + getYearParams().substring(1);
+    var ticker = document.getElementById('ticker1-select').value;
+    var url = '/api/chart/predictability?ticker=' + ticker + '&' + getYearParams().substring(1);
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -735,12 +727,12 @@ document.getElementById('ticker1-select').addEventListener('change', function() 
     updateDispersion();
     updateComparison();
     updateEpsReturnsTrend();
+    updatePredictability();
 });
 document.getElementById('revision-quarters').addEventListener('change', updateRevisionTrail);
 document.getElementById('ticker2-select').addEventListener('change', function() {
     updateComparison();
 });
-document.getElementById('predictability-select').addEventListener('change', updatePredictability);
 document.getElementById('year-start').addEventListener('change', updateAllInteractiveCharts);
 document.getElementById('year-end').addEventListener('change', updateAllInteractiveCharts);
 
