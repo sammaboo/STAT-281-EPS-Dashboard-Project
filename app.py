@@ -15,6 +15,7 @@ from datetime import datetime
 import threading
 
 app = Flask(__name__)
+app.jinja_env.globals['now'] = datetime.now
 
 # Path to data file and pull script
 DATA_FILE = r'c:\Users\sam\Documents\STAT_281\ibes_compustat_merged.csv'
@@ -1684,6 +1685,17 @@ def create_prediction_chart(df, ticker='JNJ', method='linear', timeframe='all', 
     fig.update_layout(
         height=550,
         **DARK_LAYOUT
+    )
+    # Override DARK_LAYOUT legend with horizontal positioning
+    fig.update_layout(
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='center',
+            x=0.5,
+            font=dict(color='#c9d1d9')
+        )
     )
     fig.update_xaxes(gridcolor='#30363d', linecolor='#30363d', tickfont=dict(color='#8b949e'))
     fig.update_yaxes(gridcolor='#30363d', linecolor='#30363d', tickfont=dict(color='#8b949e'))

@@ -18,6 +18,9 @@
     </div>
     <a href="/refresh" class="btn btn-sm btn-outline-light">Refresh</a>
     {% if last_modified %}<span class="text-secondary small">{{ last_modified }}</span>{% endif %}
+    <div class="text-center">
+        <span class="text-secondary small">{{ now().strftime('%B %d, %Y') }}</span>
+    </div>
 </div>
 {% endif %}
 {% endblock %}
