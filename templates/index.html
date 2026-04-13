@@ -146,6 +146,7 @@
             <div>
                 <label for="pred-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
                 <select id="pred-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
+                    <option value="ALL" {% if not default_ticker1 %}selected{% endif %}>All Companies</option>
                     {% for t in tickers %}
                     <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
                     {% endfor %}
@@ -541,7 +542,8 @@ function updateHistSection() {
 // === Predictability section (pred-ticker, pred-year-start, pred-year-end) ===
 function updatePredictability() {
     var ticker = document.getElementById('pred-ticker').value;
-    var url = '/api/chart/predictability?ticker=' + ticker + getSectionYearParams('pred');
+    var tickerParam = ticker === 'ALL' ? '' : ticker;
+    var url = '/api/chart/predictability?ticker=' + tickerParam + getSectionYearParams('pred');
     fetch(url)
         .then(function(response) { return response.json(); })
         .then(function(data) {
