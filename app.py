@@ -468,14 +468,14 @@ def create_revision_trail_chart(df, ticker='JNJ', num_quarters=6):
         **DARK_LAYOUT
     )
     fig.update_layout(
-        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1,
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0,
                     font=dict(size=10, color='#c9d1d9'))
     )
     
     # Custom subplot titles as annotations for better styling
     fig.add_annotation(
         text=f'<b>Consensus Estimate Trail</b> - {company_name}',
-        x=0.5, y=1.08, xref='paper', yref='paper',
+        x=0.5, y=1.12, xref='paper', yref='paper',
         showarrow=False, font=dict(size=14, color='#c9d1d9')
     )
     fig.add_annotation(
