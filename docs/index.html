@@ -923,7 +923,7 @@ function staticFetch(url) {
             <span class="chart-story-label">Surprise vs. Returns</span>
             <div class="story-point-wrapper">
                 <span class="story-point-badge story-point-sm">Story Point</span>
-                <div class="story-point-tooltip">This scatterplot tests the Post Earnings Announcment Drift hypothesis. Each dot is one earnings event. The OLS trendline shows the relationship between surprise % and next-quarter return. In most modern research, larger positive earnings surprises produce larger positive stock returns.</div>
+                <div class="story-point-tooltip">This scatterplot graphs EPS suprise with the corresponding quarter's stock return. We see that there is not real relationship which backs the idea that earnings data does not get leaked before the announcement. Otherwise, we would see noticeable evidence of quarterly returns perfectly reflecting the reaction to the EPS suprise.</div>
             </div>
         </div>
         <div class="chart-container"><div id="eps-surprise-returns-chart"></div></div>
@@ -950,7 +950,7 @@ function staticFetch(url) {
             <span class="chart-story-label">Post-Earnings Announcement Drift</span>
             <div class="story-point-wrapper">
                 <span class="story-point-badge story-point-sm">Story Point</span>
-                <div class="story-point-tooltip">Tests whether stock prices continue drifting in the direction of the earnings surprise after the announcement. Positive surprises (beats) should see upward drift; negative surprises (misses) should see downward drift. Persistent drift suggests the market underreacts to earnings news, creating a tradeable anomaly.</div>
+                <div class="story-point-tooltip">This scatterplot tests the Post Earnings Announcment Drift hypothesis. Each dot is one earnings event. The OLS trendline shows the relationship between surprise % and next-quarter return. In most modern research, larger positive earnings surprises produce larger positive stock returns. The large percentage of datapoints in the top right quadrant support this idea.</div>
             </div>
         </div>
         <div class="chart-container"><div id="pead-chart"></div></div>
