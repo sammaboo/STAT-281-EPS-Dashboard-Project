@@ -6,21 +6,6 @@
 :root {
     /* Monochromatic Blue Theme - Clean & Professional */
     --bg-primary: #0d1117;
-}
-
-/* ===== BOOTSTRAP TOOLTIP DARK THEME ===== */
-.tooltip-inner {
-    background-color: #21262d;
-    color: #c9d1d9;
-    font-size: 0.8rem;
-    max-width: 280px;
-    text-align: left;
-    padding: 8px 12px;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-}
-.bs-tooltip-top .tooltip-arrow::before { border-top-color: #30363d; }
-.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #30363d; }
     --bg-secondary: #161b22;
     --bg-tertiary: #21262d;
     --bg-elevated: #1c2128;
@@ -38,6 +23,20 @@
     --negative: #f85149;
     --neutral: #8b949e;
 }
+
+/* ===== BOOTSTRAP TOOLTIP DARK THEME ===== */
+.tooltip-inner {
+    background-color: #21262d;
+    color: #c9d1d9;
+    font-size: 0.8rem;
+    max-width: 280px;
+    text-align: left;
+    padding: 8px 12px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+}
+.bs-tooltip-top .tooltip-arrow::before { border-top-color: #30363d; }
+.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #30363d; }
 
 * {
     box-sizing: border-box;
