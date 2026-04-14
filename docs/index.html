@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776194272"></script>
+<script src="static/prediction_engine.js?v=1776194563"></script>
 <script>
 var _sfCache = {};
 var _h = {'Content-Type': 'application/json'};
@@ -1373,13 +1373,9 @@ document.addEventListener('DOMContentLoaded', function() {
         wrapper.addEventListener('mouseenter', function() {
             var tip = wrapper.querySelector('.story-point-tooltip');
             if (!tip) return;
-            // Temporarily show to measure
-            tip.style.visibility = 'hidden';
-            tip.style.display = 'block';
             var rect = wrapper.getBoundingClientRect();
             var tipW = 320;
-            var tipH = tip.offsetHeight || 120;
-            tip.style.display = '';
+            var tipH = 120;
             // Position directly below the badge, right-aligned
             var top = rect.bottom + 4;
             var left = rect.right - tipW;
