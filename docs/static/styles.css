@@ -189,6 +189,27 @@ body {
     opacity: 1;
 }
 
+/* Per-chart story point (smaller variant) */
+.chart-story-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    padding: 0 2px;
+}
+
+.chart-story-label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.story-point-sm {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
 .chart-title {
     font-size: 0.85em;
     font-weight: 600;

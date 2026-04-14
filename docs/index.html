@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776147736"></script>
+<script src="static/prediction_engine.js?v=1776192312"></script>
 <script>
 var _sfCache = {};
 var _h = {'Content-Type': 'application/json'};
@@ -314,7 +314,7 @@ function staticFetch(url) {
             <h5 class="mb-0" style="color: #c9d1d9;">Historical EPS Analysis</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Detailed analysis of the selected company's earnings history. The main chart shows estimate vs actual EPS over time. The revision trail shows how analyst consensus evolves in dollar terms as each earnings date approaches - lines converge toward the actual. The accuracy funnel below aggregates all historical quarters to show how forecast error narrows over time (P25-P75 shaded band). The dispersion chart shows how much analysts agree or disagree.</div>
+                <div class="story-point-tooltip">Explore a company's earnings track record. This section shows quarterly EPS vs. analyst estimates, how forecasts evolve over time (revision trail), and the level of analyst disagreement (dispersion). Pick a company and date range to start — hover over each chart's Story Point for details.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
@@ -421,11 +421,24 @@ function staticFetch(url) {
         </div>
     </div>
     <div class="card-body">
+        <div class="chart-story-header">
+            <span class="chart-story-label">EPS History</span>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge story-point-sm">Story Point</span>
+                <div class="story-point-tooltip">Quarterly actual EPS (bars) vs. median analyst consensus estimate (line). Green bars indicate the company beat expectations; red bars indicate a miss. Reveals the company's earnings trajectory and how closely analysts tracked performance over time.</div>
+            </div>
+        </div>
         <div class="chart-container"><div id="eps-history-chart"></div></div>
         <div class="row mt-3">
             <div class="col-lg-12">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="color: #8b949e; font-size: 0.85rem;">Revision Trail</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="color: #8b949e; font-size: 0.85rem;">Revision Trail</span>
+                        <div class="story-point-wrapper">
+                            <span class="story-point-badge story-point-sm">Story Point</span>
+                            <div class="story-point-tooltip">Each line tracks one quarter's consensus EPS estimate as it gets revised over time. The x-axis shows months before the earnings announcement. Lines should converge toward the actual value (star markers) as the report date nears. Green star = beat, red star = miss.</div>
+                        </div>
+                    </div>
                     <div class="d-flex align-items-center gap-2">
                         <label for="revision-quarters" style="color: #8b949e; font-size: 0.8rem; white-space: nowrap;">Quarters:</label>
                         <select id="revision-quarters" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 80px;">
@@ -478,7 +491,16 @@ function staticFetch(url) {
             </div>
         </div>
         <div class="row mt-3">
-            <div class="col-lg-12"><div class="chart-container"><div id="dispersion-chart"></div></div></div>
+            <div class="col-lg-12">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">Analyst Dispersion</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Measures analyst disagreement — the standard deviation of individual EPS estimates divided by the absolute consensus value. Higher dispersion means less agreement among analysts. Spikes in dispersion often precede earnings surprises or periods of uncertainty.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="dispersion-chart"></div></div>
+            </div>
         </div>
     </div>
 </div>
@@ -490,7 +512,7 @@ function staticFetch(url) {
             <h5 class="mb-0" style="color: #c9d1d9;">EPS Predictability</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">How predictable are a company's earnings? This scatter plot shows current EPS vs. lagged EPS with an OLS trendline. A high R-squared means past earnings are a strong predictor of future earnings. Use the dropdowns to compare different companies and time periods.</div>
+                <div class="story-point-tooltip">How persistent are a company's earnings? This regression tests whether last quarter's EPS predicts this quarter's. High R² and a slope near 1.0 mean earnings are stable and forecastable. Filter by company or view the full cross-section.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
@@ -653,7 +675,7 @@ function staticFetch(url) {
             <h5 class="mb-0" style="color: #c9d1d9;">EPS Predictions & Forecasting</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Forecast future quarterly EPS using six methods: linear regression, exponential smoothing, moving average, analyst-adjusted estimates, Holt-Winters (triple exponential smoothing with seasonality), or SARIMA (seasonal ARIMA). The surprise pattern chart shows historical beat/miss trends. Surprise analysis breaks down seasonality by quarter and tracks the rolling average over time. Adjust the time frame to focus predictions on recent data. <strong>Confidence scores are computed via leave-last-4-out backtesting</strong> - the model is trained on all data except the last 4 quarters, then its predictions are compared to actual values. The resulting MAPE (Mean Absolute % Error) is converted into a confidence score.</div>
+                <div class="story-point-tooltip">Forecast the next quarter's EPS using six statistical methods and adjust the training window. Below, the surprise analysis reveals whether the company has a pattern of beating or missing estimates — and whether that pattern is seasonal. <strong>Confidence scores are computed via leave-last-4-out backtesting</strong> — the model trains on all data except the last 4 quarters, then predictions are compared to actuals. The resulting MAPE is converted into a confidence score.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
@@ -758,11 +780,25 @@ function staticFetch(url) {
     <div class="card-body">
         <div class="row mb-3">
             <div class="col-12">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">EPS Forecast</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Forecast future EPS using the selected statistical method. Gray line = historical actuals, colored line = fitted values, dashed = out-of-sample forecast. Confidence is based on leave-last-4-out backtesting MAPE. Adjust the training window slider to see how the forecast changes with different data ranges.</div>
+                    </div>
+                </div>
                 <div class="chart-container"><div id="prediction-chart"></div></div>
             </div>
         </div>
         <div class="row">
             <div class="col-12">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">Surprise Analysis</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Top panel: seasonal beat/miss patterns by fiscal quarter — reveals if surprises cluster in certain quarters. Bottom panel: rolling 4-quarter average surprise % over time, tracking whether the company is trending toward more beats or misses.</div>
+                    </div>
+                </div>
                 <div class="chart-container"><div id="surprise-analysis-chart"></div></div>
             </div>
         </div>
@@ -790,7 +826,7 @@ function staticFetch(url) {
             <h5 class="mb-0" style="color: #c9d1d9;">Estimate Convergence</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">How do analyst forecasts narrow toward actual earnings as the earnings date approaches? Each colored line tracks the consensus estimate for one fiscal quarter over time (x-axis = months before earnings). Stars at x=0 show the actual: green = beat, red = miss. Tightly converging lines indicate predictable earnings.</div>
+                <div class="story-point-tooltip">Watch analyst consensus estimates converge toward actual EPS as the earnings date approaches. Each colored line = one fiscal quarter. Stars at x=0 show the actual: green = beat, red = miss. Tight convergence = predictable company; wide dispersion = uncertain earnings.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
@@ -912,7 +948,7 @@ function staticFetch(url) {
             </div>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Explore the relationship between earnings surprises and stock returns using CRSP market data. The scatter plot tests whether beating analyst estimates drives higher returns across all companies with a single OLS trendline. The dual-axis trend chart overlays EPS with stock returns for a single company over time.</div>
+                <div class="story-point-tooltip">Does beating estimates drive stock returns? The scatter plot tests this cross-sectionally with all companies pooled. The trend chart below overlays one company's EPS and cumulative stock return to see if they move together. Uses CRSP market data.</div>
             </div>
         </div>
         <div class="d-flex gap-3 flex-wrap align-items-end">
@@ -1021,10 +1057,28 @@ function staticFetch(url) {
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-12"><div class="chart-container"><div id="eps-surprise-returns-chart"></div></div></div>
+            <div class="col-12">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">Surprise vs. Returns</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Tests the PEAD hypothesis cross-sectionally: do larger earnings surprises produce larger stock returns? Each dot is one earnings event. The OLS trendline shows the market-wide relationship between surprise % and next-quarter return.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="eps-surprise-returns-chart"></div></div>
+            </div>
         </div>
         <div class="row">
-            <div class="col-12"><div class="chart-container"><div id="eps-returns-trend-chart"></div></div></div>
+            <div class="col-12">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">EPS & Returns Trend</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Dual-axis time series — EPS on the left axis (bars), cumulative stock return on the right (line). Shows whether a company's earnings growth translates into stock price appreciation over time.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="eps-returns-trend-chart"></div></div>
+            </div>
         </div>
     </div>
 </div>
@@ -1036,7 +1090,7 @@ function staticFetch(url) {
             <h5 class="mb-0" style="color: #c9d1d9;">Post-Earnings Announcement Drift</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">One of the most well-documented anomalies in finance: stocks that beat earnings estimates tend to keep rising in the following quarter, while stocks that miss tend to keep falling. The left chart groups all earnings events into surprise quintiles and shows the average next-quarter return for each group. The right chart shows the raw scatter.</div>
+                <div class="story-point-tooltip">Post-Earnings Announcement Drift — one of finance's most robust anomalies. Stocks that beat estimates tend to keep rising; misses tend to keep falling. The left chart groups events into surprise quintiles showing average next-quarter returns. The right chart shows the raw scatter of surprise % vs. return.</div>
             </div>
         </div>
     </div>
@@ -1052,22 +1106,76 @@ function staticFetch(url) {
             <h5 class="mb-0" style="color: #c9d1d9;">Additional Metrics</h5>
             <div class="story-point-wrapper">
                 <span class="story-point-badge">Story Point</span>
-                <div class="story-point-tooltip">Supplementary charts covering analyst estimates vs. actuals, estimate accuracy (average error %), revenue trends, net income trends for top companies, net income margin rankings, and analyst coverage depth. These provide broader context beyond the interactive and prediction sections.</div>
+                <div class="story-point-tooltip">Supplementary cross-sectional views covering analyst estimates vs. actuals, forecast accuracy, revenue and profitability trends, operating margins, and analyst coverage depth. These charts provide broader context across all companies in the dataset.</div>
             </div>
         </div>
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-lg-6"><div class="chart-container"><div id="eps-chart"></div></div></div>
-            <div class="col-lg-6"><div class="chart-container"><div id="accuracy-chart"></div></div></div>
+            <div class="col-lg-6">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">EPS Estimates vs. Actuals</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Grouped bar chart comparing the median analyst consensus estimate (blue) to the actual reported EPS (green or red) for each company. Reveals systematic optimism or pessimism in analyst forecasts.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="eps-chart"></div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">Estimate Accuracy</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Average absolute percentage error of analyst EPS estimates by company. Lower bars = more accurate forecasts. Companies with stable, predictable earnings typically have smaller errors.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="accuracy-chart"></div></div>
+            </div>
         </div>
         <div class="row">
-            <div class="col-lg-6"><div class="chart-container"><div id="revenue-chart"></div></div></div>
-            <div class="col-lg-6"><div class="chart-container"><div id="profitability-chart"></div></div></div>
+            <div class="col-lg-6">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">Revenue Trends</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Total revenue by company over time. Shows top-line growth trajectories — which companies are expanding, plateauing, or declining.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="revenue-chart"></div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">Net Income</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Net income trends for top companies over time. Reveals whether revenue growth translates into bottom-line profit and identifies companies with improving or deteriorating profitability.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="profitability-chart"></div></div>
+            </div>
         </div>
         <div class="row">
-            <div class="col-lg-6"><div class="chart-container"><div id="ebitda-chart"></div></div></div>
-            <div class="col-lg-6"><div class="chart-container"><div id="analyst-chart"></div></div></div>
+            <div class="col-lg-6">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">EBITDA Margin</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">EBITDA margin (EBITDA ÷ Revenue) by company. Higher margins indicate stronger operating efficiency and pricing power. Useful for comparing profitability across different industries.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="ebitda-chart"></div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">Analyst Coverage</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Number of unique analysts covering each company. Greater coverage often correlates with more accurate consensus estimates and greater institutional investor interest.</div>
+                    </div>
+                </div>
+                <div class="chart-container"><div id="analyst-chart"></div></div>
+            </div>
         </div>
     </div>
 </div>
