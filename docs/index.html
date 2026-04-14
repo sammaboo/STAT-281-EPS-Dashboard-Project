@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776193901"></script>
+<script src="static/prediction_engine.js?v=1776194272"></script>
 <script>
 var _sfCache = {};
 var _h = {'Content-Type': 'application/json'};
@@ -630,7 +630,7 @@ function staticFetch(url) {
             <div>
                 <label for="pred-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
                 <select id="pred-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
-                    <option value="ALL" selected>All Companies</option>
+                    <option value="ALL" >All Companies</option>
                     
                     <option value="AAPL" >AAPL - APPLE INC</option>
                     
@@ -652,7 +652,7 @@ function staticFetch(url) {
                     
                     <option value="INTC" >INTC - INTEL CORP</option>
                     
-                    <option value="JNJ" >JNJ - JOHNSON &amp; JOHNSON</option>
+                    <option value="JNJ" selected>JNJ - JOHNSON &amp; JOHNSON</option>
                     
                     <option value="KO" >KO - COCA-COLA CO</option>
                     
@@ -733,6 +733,13 @@ function staticFetch(url) {
     <div class="card-body">
         <div class="row">
             <div class="col-12">
+                <div class="chart-story-header">
+                    <span class="chart-story-label">EPS Predictability</span>
+                    <div class="story-point-wrapper">
+                        <span class="story-point-badge story-point-sm">Story Point</span>
+                        <div class="story-point-tooltip">Scatter plot of lagged EPS (t-1) vs. current EPS (t) with an OLS regression line. A tight cluster along the line means earnings are highly persistent and predictable. Points far from the line indicate volatile or one-off earnings events. R-squared measures how much of current EPS is explained by last quarter's EPS.</div>
+                    </div>
+                </div>
                 <div class="chart-container">
                     <div id="predictability-chart"></div>
                     <div class="row g-2 mt-2" id="predictability-stats">
@@ -927,6 +934,13 @@ function staticFetch(url) {
         </div>
     </div>
     <div class="card-body">
+        <div class="chart-story-header">
+            <span class="chart-story-label">Post-Earnings Announcement Drift</span>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge story-point-sm">Story Point</span>
+                <div class="story-point-tooltip">Tests whether stock prices continue drifting in the direction of the earnings surprise after the announcement. Positive surprises (beats) should see upward drift; negative surprises (misses) should see downward drift. Persistent drift suggests the market underreacts to earnings news, creating a tradeable anomaly.</div>
+            </div>
+        </div>
         <div class="chart-container"><div id="pead-chart"></div></div>
     </div>
 </div>
@@ -1354,19 +1368,26 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Tooltip(el);
     });
 
-    // Position story-point tooltips within viewport on hover
+    // Position story-point tooltips close to the badge, adjusting to stay in viewport
     document.querySelectorAll('.story-point-wrapper').forEach(function(wrapper) {
         wrapper.addEventListener('mouseenter', function() {
             var tip = wrapper.querySelector('.story-point-tooltip');
             if (!tip) return;
+            // Temporarily show to measure
+            tip.style.visibility = 'hidden';
+            tip.style.display = 'block';
             var rect = wrapper.getBoundingClientRect();
             var tipW = 320;
-            var tipH = tip.offsetHeight || 200;
-            var top = rect.bottom + 8;
+            var tipH = tip.offsetHeight || 120;
+            tip.style.display = '';
+            // Position directly below the badge, right-aligned
+            var top = rect.bottom + 4;
             var left = rect.right - tipW;
+            // Keep within viewport horizontally
             if (left < 8) left = 8;
             if (left + tipW > window.innerWidth - 8) left = window.innerWidth - tipW - 8;
-            if (top + tipH > window.innerHeight - 8) top = rect.top - tipH - 8;
+            // If no room below, show above the badge
+            if (top + tipH > window.innerHeight - 8) top = rect.top - tipH - 4;
             tip.style.top = top + 'px';
             tip.style.left = left + 'px';
         });
