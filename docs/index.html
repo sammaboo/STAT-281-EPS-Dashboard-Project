@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776204274"></script>
+<script src="static/prediction_engine.js?v=1776199960"></script>
 <script>
 var _sfCache = {};
 var _h = {'Content-Type': 'application/json'};
@@ -761,7 +761,7 @@ function staticFetch(url) {
             <span class="chart-story-label">EPS Predictability</span>
             <div class="story-point-wrapper">
                 <span class="story-point-badge story-point-sm">Story Point</span>
-                <div class="story-point-tooltip">Scatter plot of lagged EPS (t-1) vs. current EPS (t) with an OLS regression line. A tight cluster along the line means earnings are highly persistent and predictable. Points far from the line indicate volatile or one-off earnings events. R-squared measures how much of current EPS is explained by last quarter's EPS.</div>
+                <div class="story-point-tooltip">This is a scatter plot of lagged EPS (t-1) vs. current EPS (t) with an OLS regression line. A tight cluster along the line means earnings are highly persistent and predictable. Points far from the line indicate volatile or highly event-driven earnings. R-squared measures how much of current EPS is explained by last quarter's EPS.</div>
             </div>
         </div>
         <div class="chart-container"><div id="predictability-chart"></div></div>
@@ -923,7 +923,7 @@ function staticFetch(url) {
             <span class="chart-story-label">Surprise vs. Returns</span>
             <div class="story-point-wrapper">
                 <span class="story-point-badge story-point-sm">Story Point</span>
-                <div class="story-point-tooltip">Tests the PEAD hypothesis cross-sectionally: do larger earnings surprises produce larger stock returns? Each dot is one earnings event. The OLS trendline shows the market-wide relationship between surprise % and next-quarter return.</div>
+                <div class="story-point-tooltip">This scatterplot tests the Post Earnings Announcment Drift hypothesis. Each dot is one earnings event. The OLS trendline shows the relationship between surprise % and next-quarter return. In most modern research, larger positive earnings surprises produce larger positive stock returns.</div>
             </div>
         </div>
         <div class="chart-container"><div id="eps-surprise-returns-chart"></div></div>
@@ -931,7 +931,7 @@ function staticFetch(url) {
             <span class="chart-story-label">EPS & Returns Trend</span>
             <div class="story-point-wrapper">
                 <span class="story-point-badge story-point-sm">Story Point</span>
-                <div class="story-point-tooltip">Dual-axis time series — EPS on the left axis (bars), cumulative stock return on the right (line). Shows whether a company's earnings growth translates into stock price appreciation over time.</div>
+                <div class="story-point-tooltip">This bar chart and line graph help visualize the relationship between EPS suprise and quarterly returns. It shows whether a company's earnings growth translates into stock price appreciation over time.</div>
             </div>
         </div>
         <div class="chart-container"><div id="eps-returns-trend-chart"></div></div>
