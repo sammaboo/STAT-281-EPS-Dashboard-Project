@@ -22,7 +22,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
     
-<script src="static/prediction_engine.js?v=1776194846"></script>
+<script src="static/prediction_engine.js?v=1776195317"></script>
 <script>
 var _sfCache = {};
 var _h = {'Content-Type': 'application/json'};
@@ -1118,7 +1118,7 @@ function updateConvergence() {
     // Fetch revision trail metrics
     var metricsUrl = '/api/chart/revision_trail?ticker=' + ticker + getSectionYearParams('hist');
     if (numQ) { metricsUrl += '&num_quarters=' + numQ; }
-    fetch(metricsUrl)
+    (typeof staticFetch !== 'undefined' ? staticFetch : fetch)(metricsUrl)
         .then(function(response) { return response.json(); })
         .then(function(data) {
             if (data.metrics) {
