@@ -1250,14 +1250,9 @@ def create_eps_surprise_returns_chart(df, ticker=None, year_start=None, year_end
         ))
     
     # Single OLS trendline for ALL data
-    stats = {'r_squared': None, 'slope': None, 'p_value': None, 'observations': len(plot_data), 'tickers': len(tickers),
-             'avg_surprise': round(float(plot_data['eps_surprise'].mean()), 2) if len(plot_data) > 0 else None}
     mask = plot_data['eps_surprise'].notna() & plot_data['quarterly_ret'].notna()
     if mask.sum() > 2:
         slope, intercept, r, p, se = sp_stats.linregress(plot_data.loc[mask, 'eps_surprise'], plot_data.loc[mask, 'quarterly_ret'])
-        stats['r_squared'] = round(r**2, 4)
-        stats['slope'] = round(slope, 4)
-        stats['p_value'] = round(p, 4)
         x_range = [plot_data['eps_surprise'].min(), plot_data['eps_surprise'].max()]
         y_range = [intercept + slope * x for x in x_range]
         fig.add_trace(go.Scatter(
@@ -1279,7 +1274,7 @@ def create_eps_surprise_returns_chart(df, ticker=None, year_start=None, year_end
     fig.add_hline(y=0, line_dash="dash", line_color="#8b949e", opacity=0.5)
     fig.add_vline(x=0, line_dash="dash", line_color="#8b949e", opacity=0.5)
     
-    return fig.to_json(), stats
+    return fig.to_json()
 
 def create_returns_comparison_chart(df, ticker1='JNJ', ticker2='MSFT', year_start=None, year_end=None):
     """Create annual returns comparison for two companies"""
@@ -2027,11 +2022,12 @@ def index():
         'revenue_time': create_revenue_time_chart(df, default_ticker1, default_ticker2),
         'company_comparison': create_company_comparison_chart(df, default_ticker1),
         # Returns charts (requires CRSP data)
-        'eps_surprise_returns': create_eps_surprise_returns_chart(df)[0],
+        'eps_surprise_returns': create_eps_surprise_returns_chart(df),
         'returns_comparison': create_returns_comparison_chart(df, default_ticker1, default_ticker2),
         'eps_returns_trend': create_eps_vs_returns_trend_chart(df, default_ticker1),
         # New analysis charts
         'revision_trail': create_revision_trail_chart(df, default_ticker1)[0],
+        'pead': create_pead_chart(df),
         'dispersion': create_dispersion_chart(df, default_ticker1)
     }
     
@@ -2132,11 +2128,8 @@ def api_eps_surprise_returns():
     year_start = request.args.get('year_start', type=int)
     year_end = request.args.get('year_end', type=int)
     df = load_data()
-    result = create_eps_surprise_returns_chart(df, ticker, year_start, year_end)
-    if result is None:
-        return jsonify({'chart': None, 'stats': {}})
-    chart, stats = result
-    return jsonify({'chart': chart, 'stats': stats})
+    chart = create_eps_surprise_returns_chart(df, ticker, year_start, year_end)
+    return jsonify({'chart': chart})
 
 @app.route('/api/chart/returns_comparison')
 def api_returns_comparison():

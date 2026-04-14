@@ -348,44 +348,6 @@
             </div>
         </div>
         <div class="chart-container"><div id="eps-surprise-returns-chart"></div></div>
-        <div class="row g-2 mt-2" id="surprise-returns-stats">
-            <div class="col-2">
-                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="R-Squared: How much of the variation in stock returns is explained by earnings surprises. Higher values mean surprises are a stronger predictor of returns.">
-                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">R-Squared</div>
-                    <div id="sr-stat-r2" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">-</div>
-                </div>
-            </div>
-            <div class="col-2">
-                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="OLS Slope: The estimated change in quarterly return (%) for each 1% increase in earnings surprise. Positive slope = surprises drive returns.">
-                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Slope</div>
-                    <div id="sr-stat-slope" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">-</div>
-                </div>
-            </div>
-            <div class="col-2">
-                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="P-Value: Statistical significance of the relationship. Values below 0.05 indicate a statistically significant link between surprises and returns.">
-                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">P-Value</div>
-                    <div id="sr-stat-pval" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
-                </div>
-            </div>
-            <div class="col-2">
-                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Average Surprise: The mean EPS surprise percentage across all observations. Positive = analysts tend to underestimate; negative = overestimate.">
-                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Avg Surprise</div>
-                    <div id="sr-stat-avg" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
-                </div>
-            </div>
-            <div class="col-2">
-                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Observations: Total number of earnings events (ticker-quarter pairs) included in the scatter plot.">
-                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Observations</div>
-                    <div id="sr-stat-obs" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">-</div>
-                </div>
-            </div>
-            <div class="col-2">
-                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Companies: Number of unique companies in the sample.">
-                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Companies</div>
-                    <div id="sr-stat-tickers" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">-</div>
-                </div>
-            </div>
-        </div>
         <div class="chart-story-header">
             <span class="chart-story-label">EPS & Returns Trend</span>
             <div class="story-point-wrapper">
@@ -394,6 +356,25 @@
             </div>
         </div>
         <div class="chart-container"><div id="eps-returns-trend-chart"></div></div>
+    </div>
+</div>
+
+<!-- Section 6: Post-Earnings Announcement Drift -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start">
+            <h5 class="mb-0" style="color: #c9d1d9;">Post-Earnings Announcement Drift</h5>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-story-header">
+            <span class="chart-story-label">Post-Earnings Announcement Drift</span>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge story-point-sm">Story Point</span>
+                <div class="story-point-tooltip">Tests whether stock prices continue drifting in the direction of the earnings surprise after the announcement. Positive surprises (beats) should see upward drift; negative surprises (misses) should see downward drift. Persistent drift suggests the market underreacts to earnings news, creating a tradeable anomaly.</div>
+            </div>
+        </div>
+        <div class="chart-container"><div id="pead-chart"></div></div>
     </div>
 </div>
 
@@ -492,6 +473,7 @@ var mapping = {
     company_comparison: 'comparison-chart',
     eps_surprise_returns: 'eps-surprise-returns-chart',
     eps_returns_trend: 'eps-returns-trend-chart',
+    pead: 'pead-chart',
     dispersion: 'dispersion-chart'
 };
 Object.keys(mapping).forEach(function(key) {
@@ -590,15 +572,6 @@ function updateEpsSurpriseReturns() {
             if (data.chart) {
                 var c = JSON.parse(data.chart);
                 Plotly.react('eps-surprise-returns-chart', c.data, c.layout);
-            }
-            if (data.stats) {
-                var s = data.stats;
-                document.getElementById('sr-stat-r2').textContent = s.r_squared !== null ? s.r_squared : '-';
-                document.getElementById('sr-stat-slope').textContent = s.slope !== null ? s.slope : '-';
-                document.getElementById('sr-stat-pval').textContent = s.p_value !== null ? s.p_value : '-';
-                document.getElementById('sr-stat-avg').textContent = s.avg_surprise !== null ? s.avg_surprise + '%' : '-';
-                document.getElementById('sr-stat-obs').textContent = s.observations !== null ? s.observations : '-';
-                document.getElementById('sr-stat-tickers').textContent = s.tickers !== null ? s.tickers : '-';
             }
         });
 }
