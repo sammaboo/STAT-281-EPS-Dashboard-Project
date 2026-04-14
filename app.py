@@ -2041,6 +2041,7 @@ def index():
         'eps_returns_trend': create_eps_vs_returns_trend_chart(df, default_ticker1),
         # New analysis charts
         'revision_trail': create_revision_trail_chart(df, default_ticker1)[0],
+        'pead': create_pead_chart(df),
         'dispersion': create_dispersion_chart(df, default_ticker1)
     }
     

@@ -229,9 +229,9 @@
             <div>
                 <label for="pred-ticker" class="form-label mb-1" style="color: #8b949e; font-size: 0.8rem;">Company</label>
                 <select id="pred-ticker" class="form-select form-select-sm" style="background-color: #161b22; color: #c9d1d9; border-color: #30363d; width: 200px;">
-                    <option value="ALL" {% if not default_ticker1 %}selected{% endif %}>All Companies</option>
+                    <option value="ALL" selected>All Companies</option>
                     {% for t in tickers %}
-                    <option value="{{ t.ticker }}" {% if t.ticker == default_ticker1 %}selected{% endif %}>{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
+                    <option value="{{ t.ticker }}">{{ t.ticker }} - {{ t.company_name or t.ticker }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -397,7 +397,26 @@
     </div>
 </div>
 
-<!-- Section 6: Additional Metrics -->
+<!-- Section 6: Post-Earnings Announcement Drift -->
+<div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
+    <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
+        <div class="d-flex justify-content-between align-items-start">
+            <h5 class="mb-0" style="color: #c9d1d9;">Post-Earnings Announcement Drift</h5>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-story-header">
+            <span class="chart-story-label">Post-Earnings Announcement Drift</span>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge story-point-sm">Story Point</span>
+                <div class="story-point-tooltip">This scatterplot tests the Post Earnings Announcment Drift hypothesis. Each dot is one earnings event. The OLS trendline shows the relationship between surprise % and next-quarter return. In most modern research, larger positive earnings surprises produce larger positive stock returns. The large percentage of datapoints in the top right quadrant support this idea.</div>
+            </div>
+        </div>
+        <div class="chart-container"><div id="pead-chart"></div></div>
+    </div>
+</div>
+
+<!-- Section 7: Additional Metrics -->
 <div class="card mb-4" style="background-color: #161b22; border: 1px solid #30363d;">
     <div class="card-header" style="background-color: #21262d; border-bottom: 1px solid #30363d;">
         <div class="d-flex justify-content-between align-items-start">
@@ -492,6 +511,7 @@ var mapping = {
     company_comparison: 'comparison-chart',
     eps_surprise_returns: 'eps-surprise-returns-chart',
     eps_returns_trend: 'eps-returns-trend-chart',
+    pead: 'pead-chart',
     dispersion: 'dispersion-chart'
 };
 Object.keys(mapping).forEach(function(key) {
