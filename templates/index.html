@@ -266,55 +266,49 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="row">
-            <div class="col-12">
-                <div class="chart-story-header">
-                    <span class="chart-story-label">EPS Predictability</span>
-                    <div class="story-point-wrapper">
-                        <span class="story-point-badge story-point-sm">Story Point</span>
-                        <div class="story-point-tooltip">Scatter plot of lagged EPS (t-1) vs. current EPS (t) with an OLS regression line. A tight cluster along the line means earnings are highly persistent and predictable. Points far from the line indicate volatile or one-off earnings events. R-squared measures how much of current EPS is explained by last quarter's EPS.</div>
-                    </div>
+        <div class="chart-story-header">
+            <span class="chart-story-label">EPS Predictability</span>
+            <div class="story-point-wrapper">
+                <span class="story-point-badge story-point-sm">Story Point</span>
+                <div class="story-point-tooltip">Scatter plot of lagged EPS (t-1) vs. current EPS (t) with an OLS regression line. A tight cluster along the line means earnings are highly persistent and predictable. Points far from the line indicate volatile or one-off earnings events. R-squared measures how much of current EPS is explained by last quarter's EPS.</div>
+            </div>
+        </div>
+        <div class="chart-container"><div id="predictability-chart"></div></div>
+        <div class="row g-2 mt-2" id="predictability-stats">
+            <div class="col-2">
+                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="R-Squared: Measures how well past EPS predicts current EPS. Values closer to 1.0 mean earnings are highly predictable from one quarter to the next.">
+                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">R-Squared</div>
+                    <div id="pred-stat-r2" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">-</div>
                 </div>
-                <div class="chart-container">
-                    <div id="predictability-chart"></div>
-                    <div class="row g-2 mt-2" id="predictability-stats">
-                        <div class="col-2">
-                            <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="R-Squared: Measures how well past EPS predicts current EPS. Values closer to 1.0 mean earnings are highly predictable from one quarter to the next.">
-                                <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">R-Squared</div>
-                                <div id="pred-stat-r2" style="color: #58a6ff; font-size: 1.2rem; font-weight: 600;">-</div>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Slope: The OLS regression slope of current EPS on lagged EPS. A slope near 1.0 means earnings are very stable quarter to quarter.">
-                                <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Slope</div>
-                                <div id="pred-stat-slope" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">-</div>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Mean EPS: The average earnings per share across all observations in the sample.">
-                                <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Mean EPS</div>
-                                <div id="pred-stat-mean" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Std Dev: The standard deviation of EPS, measuring how much earnings vary across quarters and companies.">
-                                <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Std Dev</div>
-                                <div id="pred-stat-std" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Observations: The total number of quarter-to-quarter EPS pairs used in the regression analysis.">
-                                <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Observations</div>
-                                <div id="pred-stat-obs" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">-</div>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Companies: The number of unique companies included in the predictability analysis.">
-                                <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Companies</div>
-                                <div id="pred-stat-companies" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">-</div>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+            <div class="col-2">
+                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Slope: The OLS regression slope of current EPS on lagged EPS. A slope near 1.0 means earnings are very stable quarter to quarter.">
+                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Slope</div>
+                    <div id="pred-stat-slope" style="color: #3fb950; font-size: 1.2rem; font-weight: 600;">-</div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Mean EPS: The average earnings per share across all observations in the sample.">
+                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Mean EPS</div>
+                    <div id="pred-stat-mean" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Std Dev: The standard deviation of EPS, measuring how much earnings vary across quarters and companies.">
+                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Std Dev</div>
+                    <div id="pred-stat-std" style="color: #f0883e; font-size: 1.2rem; font-weight: 600;">-</div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Observations: The total number of quarter-to-quarter EPS pairs used in the regression analysis.">
+                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Observations</div>
+                    <div id="pred-stat-obs" style="color: #bc8cff; font-size: 1.2rem; font-weight: 600;">-</div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; text-align: center; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="Companies: The number of unique companies included in the predictability analysis.">
+                    <div style="color: #8b949e; font-size: 0.7rem; text-transform: uppercase;">Companies</div>
+                    <div id="pred-stat-companies" style="color: #c9d1d9; font-size: 1.2rem; font-weight: 600;">-</div>
                 </div>
             </div>
         </div>
