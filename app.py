@@ -565,30 +565,9 @@ def create_pead_chart(df):
     if eps_agg['surprise_bin'].isna().all():
         return None
     
-    bin_stats = eps_agg.groupby('surprise_bin', observed=True).agg(
-        mean_drift=('next_q_ret', 'mean'),
-        count=('next_q_ret', 'count')
-    ).reset_index()
+    fig = go.Figure()
     
-    fig = make_subplots(rows=1, cols=2, subplot_titles=[
-        'Post-Earnings Drift by Surprise Quintile',
-        'Earnings Surprise vs Next-Quarter Return'
-    ], horizontal_spacing=0.12)
-    
-    # Left: Bar chart of average next-quarter return by surprise quintile
-    bar_colors = ['#f85149', '#f0883e', '#8b949e', '#58a6ff', '#3fb950']
-    fig.add_trace(go.Bar(
-        x=bin_stats['surprise_bin'],
-        y=bin_stats['mean_drift'],
-        marker_color=bar_colors[:len(bin_stats)],
-        text=[f'{v:.2f}%<br>n={n}' for v, n in zip(bin_stats['mean_drift'], bin_stats['count'])],
-        textposition='outside',
-        textfont=dict(color='#c9d1d9', size=10),
-        showlegend=False,
-        hovertemplate='%{x}<br>Avg Next-Q Return: %{y:.2f}%<extra></extra>'
-    ), row=1, col=1)
-    
-    # Right: Scatter of surprise vs next-quarter return
+    # Scatter of surprise vs next-quarter return
     fig.add_trace(go.Scatter(
         x=eps_agg['surprise_pct'],
         y=eps_agg['next_q_ret'],
@@ -601,7 +580,7 @@ def create_pead_chart(df):
         ),
         showlegend=False,
         hovertemplate='Surprise: %{x:.2f}%<br>Next-Q Return: %{y:.2f}%<extra></extra>'
-    ), row=1, col=2)
+    ))
     
     # Add OLS trendline
     from scipy import stats as sp_stats
@@ -616,26 +595,20 @@ def create_pead_chart(df):
             line=dict(color='#f0883e', width=2, dash='dash'),
             name=f'OLS (R²={r**2:.2f}, p={p:.2f})',
             showlegend=True
-        ), row=1, col=2)
+        ))
     
-    fig.add_hline(y=0, line_color='#30363d', row=1, col=1)
-    fig.add_hline(y=0, line_color='#30363d', row=1, col=2)
+    fig.add_hline(y=0, line_color='#30363d')
+    fig.add_vline(x=0, line_color='#30363d')
     
     fig.update_layout(
-        title='Post-Earnings Announcement Drift (PEAD)<br><sub>Do stocks continue drifting after earnings surprises? Next-quarter returns by surprise magnitude.</sub>',
-        height=450,
-        margin=dict(t=80),
+        title='Earnings Surprise vs Next-Quarter Return',
+        xaxis_title='EPS Surprise (%)',
+        yaxis_title='Next-Quarter Return (%)',
+        height=500,
         **DARK_LAYOUT
     )
     fig.update_xaxes(gridcolor='#30363d', linecolor='#30363d', tickfont=dict(color='#8b949e'))
     fig.update_yaxes(gridcolor='#30363d', linecolor='#30363d', tickfont=dict(color='#8b949e'))
-    fig.update_yaxes(title_text='Avg Next-Quarter Return (%)', row=1, col=1, automargin=True)
-    fig.update_xaxes(title_text='Surprise Quintile', row=1, col=1)
-    fig.update_yaxes(title_text='Next-Quarter Return (%)', row=1, col=2)
-    fig.update_xaxes(title_text='EPS Surprise (%)', row=1, col=2)
-    
-    for annotation in fig['layout']['annotations']:
-        annotation['font'] = dict(color='#c9d1d9', size=12)
     
     return fig.to_json()
 
