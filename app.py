@@ -573,10 +573,11 @@ def create_pead_chart(df):
         y=eps_agg['next_q_ret'],
         mode='markers',
         marker=dict(
-            size=6,
+            size=7,
             color=eps_agg['surprise_pct'],
             colorscale=[[0, '#f85149'], [0.5, '#8b949e'], [1, '#3fb950']],
-            opacity=0.6
+            cmid=0,
+            opacity=0.7
         ),
         showlegend=False,
         hovertemplate='Surprise: %{x:.2f}%<br>Next-Q Return: %{y:.2f}%<extra></extra>'
@@ -599,6 +600,34 @@ def create_pead_chart(df):
     
     fig.add_hline(y=0, line_color='#30363d')
     fig.add_vline(x=0, line_color='#30363d')
+    
+    # Quadrant percentages and labels
+    total = len(eps_agg)
+    if total > 0:
+        tr = ((eps_agg['surprise_pct'] > 0) & (eps_agg['next_q_ret'] > 0)).sum()
+        tl = ((eps_agg['surprise_pct'] < 0) & (eps_agg['next_q_ret'] > 0)).sum()
+        br = ((eps_agg['surprise_pct'] > 0) & (eps_agg['next_q_ret'] < 0)).sum()
+        bl = ((eps_agg['surprise_pct'] < 0) & (eps_agg['next_q_ret'] < 0)).sum()
+        
+        x_max = eps_agg['surprise_pct'].max()
+        x_min = eps_agg['surprise_pct'].min()
+        y_max = eps_agg['next_q_ret'].max()
+        y_min = eps_agg['next_q_ret'].min()
+        
+        quadrants = [
+            (x_max * 0.75, y_max * 0.85, f"Beat + Drift Up<br><b>{tr/total*100:.1f}%</b>", '#3fb950'),
+            (x_min * 0.75, y_max * 0.85, f"Miss + Drift Up<br><b>{tl/total*100:.1f}%</b>", '#8b949e'),
+            (x_max * 0.75, y_min * 0.85, f"Beat + Drift Down<br><b>{br/total*100:.1f}%</b>", '#8b949e'),
+            (x_min * 0.75, y_min * 0.85, f"Miss + Drift Down<br><b>{bl/total*100:.1f}%</b>", '#f85149'),
+        ]
+        for qx, qy, text, color in quadrants:
+            fig.add_annotation(
+                x=qx, y=qy, text=text, showarrow=False,
+                font=dict(size=11, color=color),
+                align='center',
+                bgcolor='rgba(13,17,23,0.8)',
+                bordercolor=color, borderwidth=1, borderpad=6
+            )
     
     fig.update_layout(
         title='Earnings Surprise vs Next-Quarter Return',
